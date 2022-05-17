@@ -30,11 +30,16 @@ typedef struct Response{
     res_t type;
 } Response;
 
-typedef struct filedata{
+typedef struct FileData{
     char data[1024];
-} filedata;
+} FileData;
 
-typedef struct fileattr{
+typedef struct FileAttr{
     char path[256];
     struct stat st;
-} fileattr;
+} FileAttr;
+
+void printRequest(Request* req);
+void printResponse(Response* res);
+void printFileData(FileData* data);
+void printFileAttr(FileAttr* attr);
