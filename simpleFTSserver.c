@@ -10,23 +10,28 @@
 #define CHUNK_SIZE 1024
 #define PATH_MAX 256
 
+void discon(int fd){
+    shutdown(fd, SHUT_RDWR);
+    close(fd);
+}
 int errordisconnect(int sockfd,int clifd){
     if(clifd > 0){
-        close(clifd);
+        discon(clifd);
     }
-    close(sockfd);
+    discon(sockfd);
     exit(EXIT_FAILURE);
 }
 
 int main(int argc, char** argv){
     int rc, tmp;
     int listenfd, clientfd;
-    int offset, size, nread, rcv_size;
+    int offset, size, nread, snd_size;
     struct sockaddr_in servaddr, cliaddr;
     char buf[CHUNK_SIZE];
     char path[PATH_MAX];
     char* noent = "NO ENTRY";
     FILE* file;
+    int yes = 1;
 
     //ソケット生成
     listenfd = socket(AF_INET, SOCK_STREAM, 0);
@@ -34,6 +39,9 @@ int main(int argc, char** argv){
         printf("create sock fail\n");
         errordisconnect(listenfd,0);
     }
+
+    //ソケット設定
+    setsockopt(listenfd, SOL_SOCKET, SO_REUSEADDR, (const char *)&yes, sizeof(yes));
 
     //アドレス生成
     servaddr.sin_family = AF_INET;
@@ -85,6 +93,22 @@ int main(int argc, char** argv){
     }
 
     //ファイルのリードと送信のループ
+    while(1){
+        //読み込み
+        nread = fread(buf, 1, CHUNK_SIZE, file);
+        if(nread == 0){
+            printf("read finish\n");
+            break;
+        }
+        //送信
+        snd_size = send(clientfd, buf, nread, 0);
+        if(snd_size < 0){
+            printf("send data fail\n");
+            errordisconnect(listenfd, clientfd);
+        }
+    }
 
+    close(clientfd);
+    close(listenfd);
     return 0;
 }
