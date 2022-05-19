@@ -6,6 +6,7 @@
 #include <string.h>
 #include <netdb.h>
 #include <sys/types.h>
+#include "structCommon.h"
 
 #define CHUNK_SIZE 1024
 
@@ -14,19 +15,12 @@ int errordisconnect(int sockfd){
     exit(EXIT_FAILURE);
 }
 
-int main(int argc, char** argv){
+/*接続*/
+int stconnect(char* ip, u_int16_t port){
     int rc;
     int sockfd;
-    int offset, size, nread, rcv_size;
     struct sockaddr_in servaddr;
-    char buf[CHUNK_SIZE];
-   
-    //引数チェック
-    if(argc < 2){
-        printf("client [path]\n");
-        errordisconnect(sockfd);
-    }
-
+    
     //ソケット生成
     sockfd = socket(AF_INET, SOCK_STREAM, 0);
     if(sockfd < 0){
@@ -36,43 +30,84 @@ int main(int argc, char** argv){
 
     //アドレス生成
     servaddr.sin_family = AF_INET;
-    servaddr.sin_addr.s_addr = inet_addr("127.0.0.1");
-    servaddr.sin_port = htons(8080);
+    servaddr.sin_addr.s_addr = inet_addr(ip);
+    servaddr.sin_port = htons(port);
 
     //接続
     rc = connect(sockfd, (struct sockaddr*)&servaddr, sizeof(servaddr));
     if(rc < 0){
         printf("connect fail\n");
-        errordisconnect(sockfd);
+        return -1;
     }
-    
+
+    return sockfd;
+}
+
+int main(int argc, char** argv){
+    int rc;
+    int sockfd;
+    int offset, size, nread, rcv_size;
+    struct sockaddr_in servaddr;
+    char buf[CHUNK_SIZE];
+   
+    sockfd = stconnect("127.0.0.1", 8080);
+
+    //Requestの作成
+    Request req = {0};
+    req.type = NONE;
+    strcpy(req.path, "/PATH/");
+
     //サーバーにパスを送信
-    rc = send(sockfd, argv[1], strlen(argv[1]), 0);
+    rc = sendRequest(sockfd, &req);
     if(rc < 0){
         printf("send fail\n");
         errordisconnect(sockfd);
     }
 
-    while(1){
-        //バッファの初期化
-        bzero(buf, CHUNK_SIZE);
+    //Responseの受信
+    Response res = {0};
+    rc = recvResponse(sockfd, &res);
+    if(rc < 0){
+        printf("recv fail\n");
+        errordisconnect(sockfd);
+    }
+    printResponse(&res);
 
-        //受信の取得
-        rcv_size = recv(sockfd, buf, CHUNK_SIZE, 0);
-        if(rcv_size <= 0){
-            printf("\n[recv error]\n");
-            errordisconnect(sockfd);
-        }
+    //statの作成
+    struct stat st = {0};
+    stat("./structClient.c", &st);
+    rc = sendstat(sockfd, &st);
+    if(rc < 0){
+        printf("send fail\n");
+        errordisconnect(sockfd);
+    }
+    
+    //ファイルの送信
+    
+    //ファイルデータの用意
+    FILE* file;
+    FileData data = {0};
 
-        //受信データの出力
-        buf[rcv_size] = '\0';
-        printf("%s", buf);
-
-        //ループ条件
-        if(rcv_size < CHUNK_SIZE){
-            break;
-        }
+    file = fopen("sample.txt", "r+");
+    if(rc < 0){
+        printf("open fail\n");
+        errordisconnect(sockfd);
     }
 
+    rc = fread(data.data, 1, 1024, file);
+    if(rc < 0){
+        printf("read fail\n");
+        errordisconnect(sockfd);
+    }
+
+    //送信
+    data.index = 0;
+    rc = sendFileData(sockfd, &data);
+    if(rc < 0){
+        printf("send fail\n");
+        errordisconnect(sockfd);
+    }
+
+    close(sockfd);
     return 0;
 }

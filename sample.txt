@@ -1,0 +1,2 @@
+hello world.
+This file is a sample for attempte of struct data transportion

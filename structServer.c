@@ -31,9 +31,6 @@ int main(int argc, char** argv){
     struct sockaddr_in servaddr, cliaddr;
     int yes = 1;
 
-    Request req;
-    Response res;
-
     //ソケット生成
     listenfd = socket(AF_INET, SOCK_STREAM, 0);
     if(listenfd < 0){
@@ -72,13 +69,48 @@ int main(int argc, char** argv){
     }
 
     /*コネクション処理*/
+    Request req;
+    Response res;
+    struct stat st;
 
     //Requestの受信
-    rc = recv(clientfd, &req, sizeof(Request), 0);
-    //Request構造体のバイトオーダー修正
-    req.type = ntohl(req.type);
+    rc = recvRequest(clientfd, &req);
+    if(rc < 0){
+        printf("recv fail\n");
+        errordisconnect(listenfd, clientfd);
+    }
+
     //Request構造体の出力
     printRequest(&req);
+
+    printf("\n");
+
+    //Responseの送信
+    res.type = YES;
+    rc = sendResponse(clientfd, &res);
+    if(rc < 0){
+        printf("send fail\n");
+        errordisconnect(listenfd, clientfd);
+    }
+
+    //statの受信
+    rc = recvstat(clientfd, &st); 
+    if(rc < 0){
+        printf("recv fail\n");
+        errordisconnect(listenfd, clientfd);
+    }
+
+    //statの出力
+    printstat(&st);
+
+    //FileDataの受信
+    FileData data;
+    rc = recvFileData(clientfd, &data);
+    if(rc < 0){
+        printf("recv fail\n");
+        errordisconnect(listenfd, clientfd);
+    }
+    printFileData(&data);
 
     close(clientfd);
     close(listenfd);
