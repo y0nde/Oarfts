@@ -18,32 +18,29 @@ void printRequest(Request* req){
     printf("data: %s\n", req->data);
 }
 
-void htonRequest(Request* dst, Request* frm){
-    if(dst == NULL | frm == NULL){
+void htonRequest(Request* req){
+    if(req == NULL){
         return;
     }
-    memcpy(dst, frm, sizeof(*frm));
-    dst->type = hton4(frm->type);
+    req->type = hton4(req->type);
+    
 }
 
-void ntohRequest(Request* dst, Request* frm){
-    if(dst == NULL | frm == NULL){
+void ntohRequest(Request* req){
+    if(req == NULL){
         return;
     }
-    memcpy(dst, frm, sizeof(*frm));
-    dst->type = ntoh4(frm->type);
+    req->type = ntoh4(req->type);
 }
 
-int sendRequest(int sockfd, Request* preq){
+int sendRequest(int sockfd, Request* req){
     int rc;
-    Request req;
 
-    if(preq == NULL){
+    if(req == NULL){
         return -1;
     }
 
-    htonRequest(&req, preq);
-    rc = send(sockfd, &req, sizeof(req), 0);
+    rc = send(sockfd, req, sizeof(Request), 0);
     if(rc < 0){
         printf("sendRequest fail\n");
         return -1;
@@ -51,20 +48,18 @@ int sendRequest(int sockfd, Request* preq){
     return rc;
 }
 
-int recvRequest(int sockfd, Request* preq){
+int recvRequest(int sockfd, Request* req){
     int rc;
-    Request req;
 
-    if(preq == NULL){
+    if(req == NULL){
         return -1;
     }
 
-    rc = recv(sockfd, &req, sizeof(req), 0);
+    rc = recv(sockfd, req, sizeof(Request), 0);
     if(rc < 0){
         printf("recvRequest fail\n");
         return -1;
     }
-    ntohRequest(preq, &req);
     return rc;
 }
 
@@ -72,36 +67,33 @@ int recvRequest(int sockfd, Request* preq){
 /*Response*/
 /**********/
 void printResponse(Response* res){
-    printf("[Response]\ntype: %d\n", res->type);
+    printf("[Response]\nreq_t: %d\n", res->res);
+    printf("res_t: %d\n", res->res);
 }
 
 
-void htonResponse(Response* dst, Response* frm){
-    if(dst == NULL | frm == NULL){
+void htonResponse(Response* res){
+    if(res == NULL){
         return;
     }
-    memcpy(dst, frm, sizeof(*frm));
-    dst->type = hton4(frm->type);
+    res->res = hton4(res->res);
 }
 
-void ntohResponse(Response* dst, Response* frm){
-    if(dst == NULL | frm == NULL){
+void ntohResponse(Response* res){
+    if(res == NULL){
         return;
     }
-    memcpy(dst, frm, sizeof(*frm));
-    dst->type = ntoh4(frm->type);
+    res->res = ntoh4(res->res);
 }
 
 int sendResponse(int sockfd, Response* pres){
     int rc;
-    Response res;
 
     if(pres == NULL){
         return -1;
     }
 
-    htonResponse(&res, pres);
-    rc = send(sockfd, &res, sizeof(res), 0);
+    rc = send(sockfd, pres, sizeof(Response), 0);
     if(rc < 0){
         printf("send Response fail\n");
         return -1;
@@ -109,21 +101,19 @@ int sendResponse(int sockfd, Response* pres){
     return rc;
 }
 
-int recvResponse(int sockfd, Response* pres){
+int recvResponse(int sockfd, Response* res){
     int rc;
-    Response res;
 
-    if(pres == NULL){
+    if(res == NULL){
         return -1;
     }
 
-    rc = recv(sockfd, &res, sizeof(res), 0);
+    rc = recv(sockfd, res, sizeof(Response), 0);
     if(rc < 0){
         printf("send Response fail\n");
         return -1;
     }
 
-    htonResponse(pres, &res);
     return rc;
 }
 
@@ -236,28 +226,28 @@ int recvstat(int sockfd, struct stat* pst){
 }
 
 /**********/
-/*FileData*/
+/*FileChunk*/
 /**********/
-void printFileData(FileData* data){
+void printFileChunk(FileChunk* data){
     data->data[1023] = '\0';
-    printf("[FileData]\nindex: %d\n%s\n", data->index, data->data);
+    printf("[FileChunk]\nindex: %d\n%s\n", data->index, data->data);
 }
 
-void htonFileData(FileData* data){
+void htonFileChunk(FileChunk* data){
     if(data == NULL){
         return;
     }
     data->index = hton4(data->index);
 }
 
-void ntohFileData(FileData* data){
+void ntohFileChunk(FileChunk* data){
     if(data == NULL){
         return;
     }
     data->index = ntoh4(data->index);
 }
 
-int sendFileData(int sockfd, FileData* data){
+int sendFileChunk(int sockfd, FileChunk* data){
     int rc;
 
     //さすがにサイズが大きいのでコピーせずにインデックスだけ変換
@@ -265,16 +255,16 @@ int sendFileData(int sockfd, FileData* data){
         return -1;
     }
 
-    htonFileData(data);
+    htonFileChunk(data);
     rc = send(sockfd, data, sizeof(*data), 0);
     if(rc < 0){
-        printf("send FileData fail\n");
+        printf("send FileChunk fail\n");
         return -1;
     }
     return rc;
 }
 
-int recvFileData(int sockfd, FileData* data){
+int recvFileChunk(int sockfd, FileChunk* data){
     int rc;
 
     //さすがにサイズが大きいのでコピーせずにインデックスだけ変換
@@ -284,10 +274,10 @@ int recvFileData(int sockfd, FileData* data){
 
     rc = recv(sockfd, data, sizeof(*data), 0);
     if(rc < 0){
-        printf("recv FileData fail\n");
+        printf("recv FileChunk fail\n");
         return -1;
     }
-    ntohFileData(data);
+    ntohFileChunk(data);
     return rc;
 }
 

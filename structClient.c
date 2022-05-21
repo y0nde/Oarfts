@@ -86,7 +86,7 @@ int main(int argc, char** argv){
     
     //ファイルデータの用意
     FILE* file;
-    FileData data = {0};
+    FileChunk data = {0};
 
     file = fopen("sample.txt", "r+");
     if(rc < 0){
@@ -94,7 +94,7 @@ int main(int argc, char** argv){
         errordisconnect(sockfd);
     }
 
-    rc = fread(data.data, 1, 1024, file);
+    rc = fread(data.data, 1, CHUNK_SIZE, file);
     if(rc < 0){
         printf("read fail\n");
         errordisconnect(sockfd);
@@ -102,7 +102,7 @@ int main(int argc, char** argv){
 
     //送信
     data.index = 0;
-    rc = sendFileData(sockfd, &data);
+    rc = sendFileChunk(sockfd, &data);
     if(rc < 0){
         printf("send fail\n");
         errordisconnect(sockfd);

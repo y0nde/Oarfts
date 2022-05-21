@@ -4,6 +4,9 @@
 #include <sys/socket.h>
 #include <arpa/inet.h>
 
+#define PATH_MAX 256
+#define CHUNK_SIZE 1024
+
 typedef enum req_t {
     NONE,
     OPEN,
@@ -25,38 +28,40 @@ typedef enum res_t {
 
 typedef struct Request{
     req_t type;
-    char path[256];
+    char path[PATH_MAX];
     char data[64];
 } Request;
 
 typedef struct Response{
-    res_t type;
+    req_t req;
+    res_t res;
+    char data[64];
 } Response;
 
-typedef struct FileData{
+typedef struct FileChunk{
     int index;
-    char data[1024];
-} FileData;
+    char data[CHUNK_SIZE];
+} FileChunk;
 
 typedef struct FileAttr{
-    char path[256];
+    char path[PATH_MAX];
     struct stat st;
 } FileAttr;
 
 void printRequest(Request* req);
 void printResponse(Response* res);
 void printstat(struct stat* st);
-void printFileData(FileData* data);
+void printFileChunk(FileChunk* data);
 void printFileAttr(FileAttr* attr);
 
-void htonRequest(Request* dst, Request* frm);
-void ntohRequest(Request* dst, Request* frm);
-void htonResponse(Response* dst, Response* frm);
-void ntohResponse(Response* dst, Response* frm);
+void htonRequest(Request* req);
+void ntohRequest(Request* req);
+void htonResponse(Response* res);
+void ntohResponse(Response* res);
 void ntohstat(struct stat* dst, struct stat* frm);
 void htonstat(struct stat* dst, struct stat* frm);
-void htonFileData(FileData* data);
-void ntohFileData(FileData* data);
+void htonFileChunk(FileChunk* data);
+void ntohFileChunk(FileChunk* data);
 void htonFileAttr(FileAttr* dst, FileAttr* frm);
 void ntohFileAttr(FileAttr* dst, FileAttr* frm);
 
@@ -67,7 +72,7 @@ int sendResponse(int sockfd, Response* preq);
 int recvResponse(int sockfd, Response* preq);
 int sendstat(int sockfd, struct stat* pst);
 int recvstat(int sockfd, struct stat* pst);
-int sendFileData(int sockfd, FileData* data);
-int recvFileData(int sockfd, FileData* data);
+int sendFileChunk(int sockfd, FileChunk* data);
+int recvFileChunk(int sockfd, FileChunk* data);
 int sendFileAttr(int sockfd, FileAttr* attr);
 int recvFileAttr(int sockfd, FileAttr* attr);

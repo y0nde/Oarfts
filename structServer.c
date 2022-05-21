@@ -81,12 +81,15 @@ int main(int argc, char** argv){
     }
 
     //Request構造体の出力
+    ntohRequest(&req);
     printRequest(&req);
 
     printf("\n");
 
     //Responseの送信
-    res.type = YES;
+    res.res = YES;
+    res.req = req.type;
+    htonResponse(&res);
     rc = sendResponse(clientfd, &res);
     if(rc < 0){
         printf("send fail\n");
@@ -103,14 +106,14 @@ int main(int argc, char** argv){
     //statの出力
     printstat(&st);
 
-    //FileDataの受信
-    FileData data;
-    rc = recvFileData(clientfd, &data);
+    //FileChunkの受信
+    FileChunk data;
+    rc = recvFileChunk(clientfd, &data);
     if(rc < 0){
         printf("recv fail\n");
         errordisconnect(listenfd, clientfd);
     }
-    printFileData(&data);
+    printFileChunk(&data);
 
     close(clientfd);
     close(listenfd);
