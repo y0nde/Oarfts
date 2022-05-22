@@ -6,72 +6,337 @@
 #include "connection.h"
 #include "filetransfer.h"
 
-void printRemoteReadRequest(RemoteReadRequest* rrr){
-    printf("[RemoteReadRequest]\n");
-    printf("req_t: %d\n", rrr->type);
-    printf("path: %s\n", rrr->path);
-    printf("fd: %d\n", rrr->fd);
-    printf("offset: %d\n", rrr->offset);
-    printf("size: %d\n", rrr->size);
-    printf("index: %d\n", rrr->index);
+/*Read*/
+void printReadRequest(ReadRequest* req){
+    printf("[ReadRequest]\n");
+    printf("req_t: %d\n", req->type);
+    printf("path: %s\n", req->path);
+    printf("fd: %d\n", req->fd);
+    printf("offset: %d\n", req->offset);
+    printf("size: %d\n", req->size);
 }
 
-void ntohRRRequset(RemoteReadRequest* rrr){
-    if(rrr == NULL){
+void ntohReadRequest(ReadRequest* req){
+    if(req == NULL){
         return;
     }
-    rrr->type = ntoh4(rrr->type);
-    rrr->fd = ntoh4(rrr->fd);
-    rrr->offset = ntoh4(rrr->offset);
-    rrr->size = ntoh4(rrr->size);
-    rrr->index = ntoh4(rrr->index);
+    req->type = ntoh4(req->type);
+    req->fd = ntoh4(req->fd);
+    req->offset = ntoh4(req->offset);
+    req->size = ntoh4(req->size);
 }
 
-void htonRRRequset(RemoteReadRequest* rrr){
-    if(rrr == NULL){
+void htonReadRequest(ReadRequest* req){
+    if(req == NULL){
         return;
     }
-    memcpy(rrr, rrr, sizeof(*rrr));
-    rrr->type = hton4(rrr->type);
-    rrr->fd = hton4(rrr->fd);
-    rrr->offset = hton4(rrr->offset);
-    rrr->size = hton4(rrr->size);
-    rrr->index = hton4(rrr->index);
+    memcpy(req, req, sizeof(*req));
+    req->type = hton4(req->type);
+    req->fd = hton4(req->fd);
+    req->offset = hton4(req->offset);
+    req->size = hton4(req->size);
 }
 
 
-void printRemoteReadResponse(RemoteReadResponse* rrr){
-    printf("[RemoteReadResponse]\n");
-    printf("req_t: %d\n", rrr->req);
-    printf("res_t: %d\n", rrr->res);
-    printf("fd: %d\n", rrr->fd);
-    printf("chunks: %d\n", rrr->chunks);
+void printReadResponse(ReadResponse* res){
+    printf("[ReadResponse]\n");
+    printf("req_t: %d\n", res->req);
+    printf("res_t: %d\n", res->res);
+    printf("fd: %d\n", res->fd);
+    printf("chunks: %d\n", res->chunks);
 }
 
-void ntohRemoteReadResponse(RemoteReadResponse *rrr){
-    if(rrr == NULL){
+void ntohReadResponse(ReadResponse *res){
+    if(res == NULL){
         return;
     }
-    memcpy(rrr, rrr, sizeof(*rrr));
-    rrr->req = ntoh4(rrr->req);
-    rrr->fd = ntoh4(rrr->fd);
-    rrr->chunks = ntoh4(rrr->chunks);
+    res->req = ntoh4(res->req);
+    res->fd = ntoh4(res->fd);
+    res->chunks = ntoh4(res->chunks);
 }
 
-void htonRemoteReadResponse(RemoteReadResponse *rrr){
-    if(rrr == NULL){
+void htonReadResponse(ReadResponse *res){
+    if(res == NULL){
         return;
     }
-    memcpy(rrr, rrr, sizeof(*rrr));
-    rrr->req = hton4(rrr->req);
-    rrr->fd = hton4(rrr->fd);
-    rrr->chunks = hton4(rrr->chunks);
+    res->req = hton4(res->req);
+    res->fd = hton4(res->fd);
+    res->chunks = hton4(res->chunks);
 }
 
 int parseRequest(Request* req){
     switch(req->type){
         case READ:
-            printRemoteReadRequest((RemoteReadRequest*)req);
+            printReadRequest((ReadRequest*)req);
+        default:
+            printf("NONE\n");
+    }
+    return 0;
+}
+
+/*Write*/
+void printWriteRequest(WriteRequest* req){
+    printf("[ReadRequest]\n");
+    printf("req_t: %d\n", req->type);
+    printf("path: %s\n", req->path);
+    printf("fd: %d\n", req->fd);
+    printf("offset: %d\n", req->offset);
+    printf("size: %d\n", req->size);
+}
+
+void ntohWriteRequest(WriteRequest* req){
+    if(req == NULL){
+        return;
+    }
+    req->type = ntoh4(req->type);
+    req->fd = ntoh4(req->fd);
+    req->offset = ntoh4(req->offset);
+    req->size = ntoh4(req->size);
+}
+
+void htonWriteRequest(WriteRequest* req){
+    if(req == NULL){
+        return;
+    }
+    memcpy(req, req, sizeof(*req));
+    req->type = hton4(req->type);
+    req->fd = hton4(req->fd);
+    req->offset = hton4(req->offset);
+    req->size = hton4(req->size);
+}
+
+
+void printWriteResponse(WriteResponse* res){
+    printf("[OpenResponse]\n");
+    printf("req_t: %d\n", res->req);
+    printf("res_t: %d\n", res->res);
+    printf("fd: %d\n", res->fd);
+    printf("chunks: %d\n", res->chunks);
+}
+
+void ntohWriteResponse(WriteResponse *res){
+    if(res == NULL){
+        return;
+    }
+    res->req = ntoh4(res->req);
+    res->fd = ntoh4(res->fd);
+    res->chunks = ntoh4(res->chunks);
+}
+
+void htonWriteResponse(WriteResponse *res){
+    if(res == NULL){
+        return;
+    }
+    res->req = hton4(res->req);
+    res->fd = hton4(res->fd);
+    res->chunks = hton4(res->chunks);
+}
+
+/*Open*/
+void printOpenRequest(OpenRequest* req){
+    printf("[OpenRequest]\n");
+    printf("req_t: %d\n", req->type);
+    printf("path: %s\n", req->path);
+    printf("mode: %d\n", req->mode);
+}
+
+void ntohOpenRequest(OpenRequest* req){
+    if(req == NULL){
+        return;
+    }
+    req->type = ntoh4(req->type);
+    req->mode = ntoh4(req->mode);
+}
+
+void htonOpenRequest(OpenRequest* req){
+    if(req == NULL){
+        return;
+    }
+    memcpy(req, req, sizeof(*req));
+    req->type = hton4(req->type);
+    req->mode = hton4(req->mode);
+}
+
+
+void printOpenResponse(OpenResponse* res){
+    printf("[OpenResponse]\n");
+    printf("req_t: %d\n", res->req);
+    printf("res_t: %d\n", res->res);
+    printf("fd: %d\n", res->fd);
+}
+
+void ntohOpenResponse(OpenResponse *res){
+    if(res == NULL){
+        return;
+    }
+    res->req = ntoh4(res->req);
+    res->res = ntoh4(res->res);
+    res->fd = ntoh4(res->fd);
+}
+
+void htonOpenResponse(OpenResponse *res){
+    if(res == NULL){
+        return;
+    }
+    res->req = hton4(res->req);
+    res->res = hton4(res->res);
+    res->fd = hton4(res->fd);
+}
+
+/*Close*/
+void printCloseRequest(CloseRequest* req){
+    printf("[CloseRequest]\n");
+    printf("req_t: %d\n", req->type);
+    printf("path: %s\n", req->path);
+    printf("fd: %d\n", req->fd);
+}
+
+void ntohCloseRequest(CloseRequest* req){
+    if(req == NULL){
+        return;
+    }
+    req->type = ntoh4(req->type);
+    req->fd = ntoh4(req->fd);
+}
+
+void htonCloseRequest(CloseRequest* req){
+    if(req == NULL){
+        return;
+    }
+    memcpy(req, req, sizeof(*req));
+    req->type = hton4(req->type);
+    req->fd = hton4(req->fd);
+}
+
+
+void printCloseResponse(CloseResponse* res){
+    printf("[ReadResponse]\n");
+    printf("res_t: %d\n", res->req);
+    printf("res_t: %d\n", res->res);
+}
+
+void ntohCloseResponse(CloseResponse *res){
+    if(res == NULL){
+        return;
+    }
+    res->req = ntoh4(res->req);
+}
+
+void htonCloseResponse(CloseResponse *res){
+    if(res == NULL){
+        return;
+    }
+    res->req = hton4(res->req);
+}
+
+/*Stat*/
+void printStatRequest(StatRequest* req){
+    printf("[StatRequest]\n");
+    printf("req_t: %d\n", req->type);
+    printf("path: %s\n", req->path);
+}
+
+void ntohStatRequest(StatRequest* req){
+    if(req == NULL){
+        return;
+    }
+    req->type = ntoh4(req->type);
+}
+
+void htonStatRequest(StatRequest* req){
+    if(req == NULL){
+        return;
+    }
+    memcpy(req, req, sizeof(*req));
+    req->type = hton4(req->type);
+}
+
+
+void printStatResponse(StatResponse* res){
+    printf("[StatResponse]\n");
+    printf("res_t: %d\n", res->req);
+    printf("res_t: %d\n", res->res);
+}
+
+void ntohStatResponse(StatResponse *res){
+    if(res == NULL){
+        return;
+    }
+    res->req = ntoh4(res->req);
+    res->res = ntoh4(res->res);
+}
+
+void htonStatResponse(StatResponse *res){
+    if(res == NULL){
+        return;
+    }
+    res->req = hton4(res->req);
+    res->fd = hton4(res->fd);
+    res->chunks = hton4(res->chunks);
+}
+
+/*Readdir*/
+void printReadRequest(ReadRequest* req){
+    printf("[ReadRequest]\n");
+    printf("req_t: %d\n", req->type);
+    printf("path: %s\n", req->path);
+    printf("fd: %d\n", req->fd);
+    printf("offset: %d\n", req->offset);
+    printf("size: %d\n", req->size);
+}
+
+void ntohReadRequest(ReadRequest* req){
+    if(req == NULL){
+        return;
+    }
+    req->type = ntoh4(req->type);
+    req->fd = ntoh4(req->fd);
+    req->offset = ntoh4(req->offset);
+    req->size = ntoh4(req->size);
+}
+
+void htonReadRequest(ReadRequest* req){
+    if(req == NULL){
+        return;
+    }
+    memcpy(req, req, sizeof(*req));
+    req->type = hton4(req->type);
+    req->fd = hton4(req->fd);
+    req->offset = hton4(req->offset);
+    req->size = hton4(req->size);
+}
+
+
+void printReadResponse(ReadResponse* res){
+    printf("[ReadResponse]\n");
+    printf("res_t: %d\n", res->req);
+    printf("res_t: %d\n", res->res);
+    printf("fd: %d\n", res->fd);
+    printf("chunks: %d\n", res->chunks);
+}
+
+void ntohReadResponse(ReadResponse *res){
+    if(res == NULL){
+        return;
+    }
+    res->req = ntoh4(res->req);
+    res->fd = ntoh4(res->fd);
+    res->chunks = ntoh4(res->chunks);
+}
+
+void htonReadResponse(ReadResponse *res){
+    if(res == NULL){
+        return;
+    }
+    res->req = hton4(res->req);
+    res->fd = hton4(res->fd);
+    res->chunks = hton4(res->chunks);
+}
+
+int parseRequest(Request* req){
+    switch(req->type){
+        case READ:
+            printReadRequest((ReadRequest*)req);
         default:
             printf("NONE\n");
     }
@@ -88,8 +353,8 @@ int testClient(){
     }
 
     /*セッション*/
-    RemoteReadRequest req = {0};
-    RemoteReadResponse res = {0};
+    ReadRequest req = {0};
+    ReadResponse res = {0};
 
     req.fd = 1;
     req.index = 0;
@@ -97,8 +362,8 @@ int testClient(){
     req.offset = 0;
     strcpy(req.path, "file");
 
-    printRemoteReadRequest(&req);
-    htonRRRequset(&req);
+    printReadRequest(&req);
+    htonRRRequest(&req);
     rc = sendRequest(clientfd, (Request*)&req);
     if(rc < 0){
         return -1;
@@ -108,8 +373,8 @@ int testClient(){
     if(rc < 0){
         return -1;
     }
-    ntohRemoteReadResponse(&res);
-    printRemoteReadResponse(&res);
+    ntohReadResponse(&res);
+    printReadResponse(&res);
 
     return 0;
 }
@@ -129,23 +394,23 @@ int testServer(){
     }
 
     /*セッション*/
-    RemoteReadRequest req = {0};
-    RemoteReadResponse res = {0};
+    ReadRequest req = {0};
+    ReadResponse res = {0};
 
     rc = recvRequest(clientfd, (Request*)&req);
     if(rc < 0){
         return -1;
     }
-    ntohRRRequset(&req);
-    printRemoteReadRequest(&req);
+    ntohReadRequest(&req);
+    printReadRequest(&req);
 
     res.req = req.type;
     res.res = YES;
     res.fd = 0;
     res.chunks = 5;
 
-    printRemoteReadResponse(&res);
-    htonRemoteReadResponse(&res);
+    printReadResponse(&res);
+    htonReadResponse(&res);
     rc = sendResponse(clientfd, (Response*)&res);
     if(rc < 0){
         return -1;
