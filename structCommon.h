@@ -40,6 +40,7 @@ typedef struct Response{
 
 typedef struct FileChunk{
     int index;
+    int size;
     char data[CHUNK_SIZE];
 } FileChunk;
 

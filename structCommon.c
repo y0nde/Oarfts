@@ -77,6 +77,7 @@ void htonResponse(Response* res){
         return;
     }
     res->res = hton4(res->res);
+    res->req = hton4(res->req);
 }
 
 void ntohResponse(Response* res){
@@ -84,6 +85,7 @@ void ntohResponse(Response* res){
         return;
     }
     res->res = ntoh4(res->res);
+    res->req = ntoh4(res->req);
 }
 
 int sendResponse(int sockfd, Response* pres){
@@ -238,6 +240,7 @@ void htonFileChunk(FileChunk* data){
         return;
     }
     data->index = hton4(data->index);
+    data->size = hton4(data->size);
 }
 
 void ntohFileChunk(FileChunk* data){
@@ -245,6 +248,7 @@ void ntohFileChunk(FileChunk* data){
         return;
     }
     data->index = ntoh4(data->index);
+    data->size = ntoh4(data->size);
 }
 
 int sendFileChunk(int sockfd, FileChunk* data){

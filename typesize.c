@@ -12,9 +12,10 @@ int main(void)
   int a;
   long b;
   short c;
-  FileData data;
-  
-  printf("FileData %ld\n", sizeof(FileData));
+  FileChunk data;
+ 
+  printf("%d\n", 5 / 2);
+  printf("FileData %ld\n", sizeof(FileChunk));
   printf("int %ld\n", sizeof(int));
   printf("long %ld\n", sizeof(long));
   printf("short %ld\n", sizeof(short));

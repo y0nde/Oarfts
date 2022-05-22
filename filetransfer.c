@@ -37,13 +37,12 @@ void htonReadRequest(ReadRequest* req){
     req->size = hton4(req->size);
 }
 
-
 void printReadResponse(ReadResponse* res){
     printf("[ReadResponse]\n");
     printf("req_t: %d\n", res->req);
     printf("res_t: %d\n", res->res);
     printf("fd: %d\n", res->fd);
-    printf("chunks: %d\n", res->chunks);
+    printf("size: %d\n", res->size);
 }
 
 void ntohReadResponse(ReadResponse *res){
@@ -52,7 +51,7 @@ void ntohReadResponse(ReadResponse *res){
     }
     res->req = ntoh4(res->req);
     res->fd = ntoh4(res->fd);
-    res->chunks = ntoh4(res->chunks);
+    res->size = ntoh4(res->size);
 }
 
 void htonReadResponse(ReadResponse *res){
@@ -61,18 +60,9 @@ void htonReadResponse(ReadResponse *res){
     }
     res->req = hton4(res->req);
     res->fd = hton4(res->fd);
-    res->chunks = hton4(res->chunks);
+    res->size = hton4(res->size);
 }
 
-int parseRequest(Request* req){
-    switch(req->type){
-        case READ:
-            printReadRequest((ReadRequest*)req);
-        default:
-            printf("NONE\n");
-    }
-    return 0;
-}
 
 /*Write*/
 void printWriteRequest(WriteRequest* req){
@@ -105,13 +95,12 @@ void htonWriteRequest(WriteRequest* req){
     req->size = hton4(req->size);
 }
 
-
 void printWriteResponse(WriteResponse* res){
     printf("[OpenResponse]\n");
     printf("req_t: %d\n", res->req);
     printf("res_t: %d\n", res->res);
     printf("fd: %d\n", res->fd);
-    printf("chunks: %d\n", res->chunks);
+    printf("size: %d\n", res->size);
 }
 
 void ntohWriteResponse(WriteResponse *res){
@@ -120,7 +109,7 @@ void ntohWriteResponse(WriteResponse *res){
     }
     res->req = ntoh4(res->req);
     res->fd = ntoh4(res->fd);
-    res->chunks = ntoh4(res->chunks);
+    res->size = ntoh4(res->size);
 }
 
 void htonWriteResponse(WriteResponse *res){
@@ -129,7 +118,7 @@ void htonWriteResponse(WriteResponse *res){
     }
     res->req = hton4(res->req);
     res->fd = hton4(res->fd);
-    res->chunks = hton4(res->chunks);
+    res->size = hton4(res->size);
 }
 
 /*Open*/
@@ -208,9 +197,8 @@ void htonCloseRequest(CloseRequest* req){
     req->fd = hton4(req->fd);
 }
 
-
 void printCloseResponse(CloseResponse* res){
-    printf("[ReadResponse]\n");
+    printf("[CloseResponse]\n");
     printf("res_t: %d\n", res->req);
     printf("res_t: %d\n", res->res);
 }
@@ -250,7 +238,6 @@ void htonStatRequest(StatRequest* req){
     memcpy(req, req, sizeof(*req));
     req->type = hton4(req->type);
 }
-
 
 void printStatResponse(StatResponse* res){
     printf("[StatResponse]\n");
@@ -296,7 +283,6 @@ void htonReaddirRequest(ReaddirRequest* req){
     req->type = hton4(req->type);
 }
 
-
 void printReaddirResponse(ReaddirResponse* res){
     printf("[ReaddirResponse]\n");
     printf("res_t: %d\n", res->req);
@@ -317,6 +303,103 @@ void htonReaddirResponse(ReaddirResponse *res){
     res->req = hton4(res->req);
 }
 
+int parsePrintRequest(Request* req){
+    req_t type;
+
+    type = ntoh4(req->type);
+    switch(type){
+        case OPEN:
+            ntohOpenRequest((OpenRequest*)req);
+            printOpenRequest((OpenRequest*)req);
+            break;
+        case CLOSE:
+            ntohCloseRequest((CloseRequest*)req);
+            printCloseRequest((CloseRequest*)req);
+            break;
+        case READ:
+            ntohReadRequest((ReadRequest*)req);
+            printReadRequest((ReadRequest*)req);
+            break;
+        case WRITE:
+            ntohWriteRequest((WriteRequest*)req);
+            printWriteRequest((WriteRequest*)req);
+            break;
+        case STAT:
+            ntohStatRequest((StatRequest*)req);
+            printStatRequest((StatRequest*)req);
+            break;
+        case READDIR:
+            ntohReaddirRequest((ReaddirRequest*)req);
+            printReaddirRequest((ReaddirRequest*)req);
+            break;
+        default:
+            printf("NONE\n");
+    }
+    return 0;
+}
+
+int sendFileData(int sockfd, char *buf, int size){
+    int rc, chunks; 
+    int cnt = 0;
+    FileChunk chunk = {0};
+
+    chunks = (size / CHUNK_SIZE) + 1;
+    for(int i = 0; i < chunks; i++){
+        //送る分を計算
+        chunk.index = i;
+        chunk.size = CHUNK_SIZE;
+        rc = sendFileChunk(sockfd, &chunk);
+    } 
+    return 0;
+}
+
+int recvFileData(int sockfd, char *buf, int size){
+    int rc, chunks; 
+    int cnt = 0;
+
+
+    chunks = (size / CHUNK_SIZE) + 1;
+    for(int i = 0; i < chunks; i++){
+
+    } 
+    return 0;
+}
+
+int parsePrintResponse(Response* res){
+    req_t type;
+
+    type = ntoh4(res->req);
+    switch(type){
+        case OPEN:
+            ntohOpenResponse((OpenResponse*)res);
+            printOpenResponse((OpenResponse*)res);
+            break;
+        case CLOSE:
+            ntohCloseResponse((CloseResponse*)res);
+            printCloseResponse((CloseResponse*)res);
+            break;
+        case READ:
+            ntohReadResponse((ReadResponse*)res);
+            printReadResponse((ReadResponse*)res);
+            break;
+        case WRITE:
+            ntohWriteResponse((WriteResponse*)res);
+            printWriteResponse((WriteResponse*)res);
+            break;
+        case STAT:
+            ntohStatResponse((StatResponse*)res);
+            printStatResponse((StatResponse*)res);
+            break;
+        case READDIR:
+            ntohReaddirResponse((ReaddirResponse*)res);
+            printReaddirResponse((ReaddirResponse*)res);
+            break;
+        default:
+            printf("NONE\n");
+    }
+    return 0;
+}
+
 /*main <client, server>*/
 int testClient(){
     int rc, clientfd;
@@ -327,28 +410,134 @@ int testClient(){
     }
 
     /*セッション*/
+
+    //Read
     ReadRequest req = {0};
     ReadResponse res = {0};
 
+    req.type = READ;
     req.fd = 1;
-    req.index = 0;
     req.size = 36;
     req.offset = 0;
     strcpy(req.path, "file");
 
-    printReadRequest(&req);
-    htonRRRequest(&req);
+    htonReadRequest(&req);
     rc = sendRequest(clientfd, (Request*)&req);
     if(rc < 0){
         return -1;
     }
+    rc = parsePrintRequest((Request*)&req);
 
     rc = recvResponse(clientfd, (Response*)&res);
     if(rc < 0){
         return -1;
     }
-    ntohReadResponse(&res);
-    printReadResponse(&res);
+    rc = parsePrintResponse((Response*)&res);
+
+    //Write
+    WriteRequest wreq = {0};
+    WriteResponse wres = {0};
+
+    wreq.type = WRITE;
+    wreq.fd = 1;
+    wreq.size = 36;
+    wreq.offset = 0;
+    strcpy(wreq.path, "file");
+
+    htonWriteRequest(&wreq);
+    rc = sendRequest(clientfd, (Request*)&wreq);
+    if(rc < 0){
+        return -1;
+    }
+    rc = parsePrintRequest((Request*)&wreq);
+
+    rc = recvResponse(clientfd, (Response*)&wres);
+    if(rc < 0){
+        return -1;
+    }
+    rc = parsePrintResponse((Response*)&wres);
+
+    //Open
+    OpenRequest oreq = {0};
+    OpenResponse ores = {0};
+
+    oreq.type = OPEN;
+    oreq.mode = 1;
+    strcpy(oreq.path, "file");
+
+    htonOpenRequest(&oreq);
+    rc = sendRequest(clientfd, (Request*)&oreq);
+    if(rc < 0){
+        return -1;
+    }
+    rc = parsePrintRequest((Request*)&oreq);
+
+    rc = recvResponse(clientfd, (Response*)&ores);
+    if(rc < 0){
+        return -1;
+    }
+    rc = parsePrintResponse((Response*)&ores);
+
+    //Close
+    CloseRequest creq = {0};
+    CloseResponse cres = {0};
+
+    creq.type = CLOSE;
+    creq.fd = 1;
+    strcpy(creq.path, "file");
+
+    htonCloseRequest(&creq);
+    rc = sendRequest(clientfd, (Request*)&creq);
+    if(rc < 0){
+        return -1;
+    }
+    rc = parsePrintRequest((Request*)&creq);
+
+    rc = recvResponse(clientfd, (Response*)&cres);
+    if(rc < 0){
+        return -1;
+    }
+    rc = parsePrintResponse((Response*)&cres);
+
+    //Stat
+    StatRequest sreq = {0};
+    StatResponse sres = {0};
+
+    sreq.type = STAT;
+    strcpy(sreq.path, "file");
+
+    htonStatRequest(&sreq);
+    rc = sendRequest(clientfd, (Request*)&sreq);
+    if(rc < 0){
+        return -1;
+    }
+    rc = parsePrintRequest((Request*)&sreq);
+
+    rc = recvResponse(clientfd, (Response*)&sres);
+    if(rc < 0){
+        return -1;
+    }
+    rc = parsePrintResponse((Response*)&sres);
+
+    //Readdir
+    ReaddirRequest rrreq = {0};
+    ReaddirResponse rrres = {0};
+
+    rrreq.type = READDIR;
+    strcpy(rrreq.path, "file");
+
+    htonReaddirRequest(&rrreq);
+    rc = sendRequest(clientfd, (Request*)&rrreq);
+    if(rc < 0){
+        return -1;
+    }
+    rc = parsePrintRequest((Request*)&rrreq);
+
+    rc = recvResponse(clientfd, (Response*)&rrres);
+    if(rc < 0){
+        return -1;
+    }
+    rc = parsePrintResponse((Response*)&rrres);
 
     return 0;
 }
@@ -368,6 +557,8 @@ int testServer(){
     }
 
     /*セッション*/
+
+    //READ
     ReadRequest req = {0};
     ReadResponse res = {0};
 
@@ -375,25 +566,126 @@ int testServer(){
     if(rc < 0){
         return -1;
     }
-    ntohReadRequest(&req);
-    printReadRequest(&req);
+    rc = parsePrintRequest((Request*)&req);
 
     res.req = req.type;
     res.res = YES;
     res.fd = 0;
-    res.chunks = 5;
+    res.size = 5;
 
-    printReadResponse(&res);
     htonReadResponse(&res);
     rc = sendResponse(clientfd, (Response*)&res);
     if(rc < 0){
         return -1;
     }
+    rc = parsePrintResponse((Response*)&res);
 
+    //WRITE
+    WriteRequest wreq = {0};
+    WriteResponse wres = {0};
+
+    rc = recvRequest(clientfd, (Request*)&wreq);
+    if(rc < 0){
+        return -1;
+    }
+    rc = parsePrintRequest((Request*)&wreq);
+
+    wres.req = wreq.type;
+    wres.res = YES;
+    wres.fd = 0;
+    wres.size = 5;
+
+    htonWriteResponse(&wres);
+    rc = sendResponse(clientfd, (Response*)&wres);
+    if(rc < 0){
+        return -1;
+    }
+    rc = parsePrintResponse((Response*)&wres);
+
+    //OPEN
+    OpenRequest oreq = {0};
+    OpenResponse ores = {0};
+
+    rc = recvRequest(clientfd, (Request*)&oreq);
+    if(rc < 0){
+        return -1;
+    }
+    rc = parsePrintRequest((Request*)&oreq);
+
+    ores.req = oreq.type;
+    ores.res = YES;
+    ores.fd = 4;
+
+    htonOpenResponse(&ores);
+    rc = sendResponse(clientfd, (Response*)&ores);
+    if(rc < 0){
+        return -1;
+    }
+    rc = parsePrintResponse((Response*)&ores);
+
+    //CLOSE
+    CloseRequest creq = {0};
+    CloseResponse cres = {0};
+
+    rc = recvRequest(clientfd, (Request*)&creq);
+    if(rc < 0){
+        return -1;
+    }
+    rc = parsePrintRequest((Request*)&creq);
+
+    cres.req = creq.type;
+    cres.res = YES;
+
+    htonCloseResponse(&cres);
+    rc = sendResponse(clientfd, (Response*)&cres);
+    if(rc < 0){
+        return -1;
+    }
+    rc = parsePrintResponse((Response*)&cres);
+
+    //STAT
+    StatRequest sreq = {0};
+    StatResponse sres = {0};
+
+    rc = recvRequest(clientfd, (Request*)&sreq);
+    if(rc < 0){
+        return -1;
+    }
+    rc = parsePrintRequest((Request*)&sreq);
+
+    sres.req = sreq.type;
+    sres.res = YES;
+
+    htonStatResponse(&sres);
+    rc = sendResponse(clientfd, (Response*)&sres);
+    if(rc < 0){
+        return -1;
+    }
+    rc = parsePrintResponse((Response*)&sres);
+
+    //READDIR
+    ReaddirRequest rrreq = {0};
+    ReaddirResponse rrres = {0};
+
+    rc = recvRequest(clientfd, (Request*)&rrreq);
+    if(rc < 0){
+        return -1;
+    }
+    rc = parsePrintRequest((Request*)&rrreq);
+
+    rrres.req = rrreq.type;
+    rrres.res = YES;
+
+    htonReaddirResponse(&rrres);
+    rc = sendResponse(clientfd, (Response*)&rrres);
+    if(rc < 0){
+        return -1;
+    }
+    rc = parsePrintResponse((Response*)&rrres);
     return 0;
 }
 
-int main(int argc, char** argv){
+int test_main(int argc, char** argv){
     int rc;
 
     if(argc < 2){

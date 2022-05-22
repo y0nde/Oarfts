@@ -19,7 +19,7 @@ typedef struct ReadResponse{
     req_t req;
     res_t res;
     int fd;
-    int chunks;
+    int size;
     char padding[56];
 } ReadResponse;
 void printReadResponse(ReadResponse *res);
@@ -70,7 +70,7 @@ typedef struct WriteResponse{
     req_t req;
     res_t res;
     int fd;
-    int chunks;
+    int size;
     char padding[56];
 } WriteResponse;
 void printWriteResponse(WriteResponse *res);
@@ -143,6 +143,10 @@ typedef struct ReaddirResponse{
 void printReaddirResponse(ReaddirResponse *res);
 void ntohReaddirResponse(ReaddirResponse *res);
 void htonReaddirResponse(ReaddirResponse *res);
+
+/*data transfer*/
+int sendFileData(int sockfd, char* buf, int size);
+int recvFileData(int sockfd, char* buf, int size);
 
 int testClient();
 
