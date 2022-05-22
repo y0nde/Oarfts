@@ -271,76 +271,50 @@ void htonStatResponse(StatResponse *res){
         return;
     }
     res->req = hton4(res->req);
-    res->fd = hton4(res->fd);
-    res->chunks = hton4(res->chunks);
+    res->res = hton4(res->res);
 }
 
 /*Readdir*/
-void printReadRequest(ReadRequest* req){
-    printf("[ReadRequest]\n");
+void printReaddirRequest(ReaddirRequest* req){
+    printf("[ReaddirRequest]\n");
     printf("req_t: %d\n", req->type);
     printf("path: %s\n", req->path);
-    printf("fd: %d\n", req->fd);
-    printf("offset: %d\n", req->offset);
-    printf("size: %d\n", req->size);
 }
 
-void ntohReadRequest(ReadRequest* req){
+void ntohReaddirRequest(ReaddirRequest* req){
     if(req == NULL){
         return;
     }
     req->type = ntoh4(req->type);
-    req->fd = ntoh4(req->fd);
-    req->offset = ntoh4(req->offset);
-    req->size = ntoh4(req->size);
 }
 
-void htonReadRequest(ReadRequest* req){
+void htonReaddirRequest(ReaddirRequest* req){
     if(req == NULL){
         return;
     }
     memcpy(req, req, sizeof(*req));
     req->type = hton4(req->type);
-    req->fd = hton4(req->fd);
-    req->offset = hton4(req->offset);
-    req->size = hton4(req->size);
 }
 
 
-void printReadResponse(ReadResponse* res){
-    printf("[ReadResponse]\n");
+void printReaddirResponse(ReaddirResponse* res){
+    printf("[ReaddirResponse]\n");
     printf("res_t: %d\n", res->req);
     printf("res_t: %d\n", res->res);
-    printf("fd: %d\n", res->fd);
-    printf("chunks: %d\n", res->chunks);
 }
 
-void ntohReadResponse(ReadResponse *res){
+void ntohReaddirResponse(ReaddirResponse *res){
     if(res == NULL){
         return;
     }
     res->req = ntoh4(res->req);
-    res->fd = ntoh4(res->fd);
-    res->chunks = ntoh4(res->chunks);
 }
 
-void htonReadResponse(ReadResponse *res){
+void htonReaddirResponse(ReaddirResponse *res){
     if(res == NULL){
         return;
     }
     res->req = hton4(res->req);
-    res->fd = hton4(res->fd);
-    res->chunks = hton4(res->chunks);
-}
-
-int parseRequest(Request* req){
-    switch(req->type){
-        case READ:
-            printReadRequest((ReadRequest*)req);
-        default:
-            printf("NONE\n");
-    }
-    return 0;
 }
 
 /*main <client, server>*/
