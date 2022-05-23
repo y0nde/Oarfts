@@ -346,9 +346,20 @@ int sendFileData(int sockfd, char *buf, int size){
     chunks = (size / CHUNK_SIZE) + 1;
     for(int i = 0; i < chunks; i++){
         //送る分を計算
-        chunk.index = i;
-        chunk.size = CHUNK_SIZE;
+        if(size <= CHUNK_SIZE){//最後の送信チャンク
+            chunk.index = -1;//最後の送信チャンクはindexに-1を入れて送信先に知らせる。
+            chunk.size = size;
+        }else{
+            chunk.index = i;
+            chunk.size = CHUNK_SIZE;
+        }
+        memcpy(chunk.data, buf + (i * CHUNK_SIZE), chunk.size);
+        size -= chunk.size;
         rc = sendFileChunk(sockfd, &chunk);
+        if(rc < 0){
+            printf("send FileChunk fail\n");
+            return -1;
+        }
     } 
     return 0;
 }
@@ -356,11 +367,22 @@ int sendFileData(int sockfd, char *buf, int size){
 int recvFileData(int sockfd, char *buf, int size){
     int rc, chunks; 
     int cnt = 0;
-
+    FileChunk chunk = {0};
 
     chunks = (size / CHUNK_SIZE) + 1;
     for(int i = 0; i < chunks; i++){
-
+        //送る分を計算
+        rc = recvFileChunk(sockfd, &chunk);
+        if(rc < 0){
+            printf("recv FileChunk fail\n");
+            return -1;
+        }
+        cnt += chunk.size;
+        memcpy(buf + (i * CHUNK_SIZE), chunk.data, chunk.size);
+        //最後のパケットか確認、であれば終了
+        if(chunk.index == -1){
+            break;
+        }
     } 
     return 0;
 }
@@ -539,6 +561,28 @@ int testClient(){
     }
     rc = parsePrintResponse((Response*)&rrres);
 
+    //StatTransfer
+    FileAttr fileattr;
+    rc = stat("Makefile", &fileattr.st);
+    if(rc < 0){
+        return -1;
+    }
+
+    fileattr.errno = 0;
+    rc = sendFileAttr(clientfd, &fileattr);
+    if(rc < 0){
+        return -1;
+    }
+    printFileAttr(&fileattr);
+    
+    //FileTransfer
+    FILE* file;
+    char ftbuf[5120] = {0};
+
+    file = fopen("./Makefile", "r");
+    rc = fread(ftbuf, 1, 5120, file);
+    rc = sendFileData(clientfd, ftbuf, rc);
+
     return 0;
 }
 
@@ -682,10 +726,29 @@ int testServer(){
         return -1;
     }
     rc = parsePrintResponse((Response*)&rrres);
+
+    //StatTransfer
+    FileAttr fileattr;
+
+    rc = recvFileAttr(clientfd, &fileattr);
+    if(rc < 0){
+        return -1;
+    }
+    if(fileattr.errno == 0){
+        printFileAttr(&fileattr);
+    }
+
+    //FileTransfer
+    FILE* file;
+    char ftbuf[5120] = {0};
+
+    rc = recvFileData(clientfd, ftbuf, 5120);
+    printf("[FileData]\n%s", ftbuf);
+
     return 0;
 }
 
-int test_main(int argc, char** argv){
+int main(int argc, char** argv){
     int rc;
 
     if(argc < 2){

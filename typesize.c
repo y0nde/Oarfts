@@ -1,6 +1,7 @@
 #include <sys/types.h>
 #include <stdio.h>
 #include <stdint.h>
+#include <fcntl.h>
 #include "structCommon.h"
 
 int main(void)
@@ -13,8 +14,10 @@ int main(void)
   long b;
   short c;
   FileChunk data;
+
+  printf("O_RDWR %d\n", O_RDWR);
+  printf("O_RDONLY %d\n", O_RDONLY);
  
-  printf("%d\n", 5 / 2);
   printf("FileData %ld\n", sizeof(FileChunk));
   printf("int %ld\n", sizeof(int));
   printf("long %ld\n", sizeof(long));

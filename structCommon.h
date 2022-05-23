@@ -45,7 +45,7 @@ typedef struct FileChunk{
 } FileChunk;
 
 typedef struct FileAttr{
-    char path[PATH_MAX];
+    int errno;
     struct stat st;
 } FileAttr;
 
@@ -69,8 +69,9 @@ void ntohFileAttr(FileAttr* dst, FileAttr* frm);
 
 int sendRequest(int sockfd, Request* preq);
 int recvRequest(int sockfd, Request* preq);
-int sendResponse(int sockfd, Response* preq);
-int recvResponse(int sockfd, Response* preq);
+int sendResponse(int sockfd, Response* pres);
+int sendErrorResponse(int sockfd, Response* pres);
+int recvResponse(int sockfd, Response* pres);
 int sendstat(int sockfd, struct stat* pst);
 int recvstat(int sockfd, struct stat* pst);
 int sendFileChunk(int sockfd, FileChunk* data);

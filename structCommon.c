@@ -103,6 +103,21 @@ int sendResponse(int sockfd, Response* pres){
     return rc;
 }
 
+int sendErrorResponse(int sockfd, Response *pres){
+    int rc;
+
+    if(pres == NULL){
+        return -1;
+    }
+    pres->res = hton4(NO);
+    rc = send(sockfd, pres, sizeof(Response), 0);
+    if(rc < 0){
+        printf("send Response fail\n");
+        return -1;
+    }
+    return rc;
+}
+
 int recvResponse(int sockfd, Response* res){
     int rc;
 
@@ -232,7 +247,7 @@ int recvstat(int sockfd, struct stat* pst){
 /**********/
 void printFileChunk(FileChunk* data){
     data->data[1023] = '\0';
-    printf("[FileChunk]\nindex: %d\n%s\n", data->index, data->data);
+    printf("[FileChunk]\nindex: %d\nsize: %d\ndata:\n%s\n", data->index, data->size, data->data);
 }
 
 void htonFileChunk(FileChunk* data){
@@ -289,7 +304,7 @@ int recvFileChunk(int sockfd, FileChunk* data){
 /*FileAttr*/
 /**********/
 void printFileAttr(FileAttr* attr){
-    printf("[FileAttr]\npath: %s\n", attr->path);
+    printf("[FileAttr]\nerrno:%d\n", attr->errno);
     printstat(&(attr->st));
 }
 
@@ -298,6 +313,7 @@ void htonFileAttr(FileAttr* dst, FileAttr* frm){
         return;
     }
     memcpy(dst, frm, sizeof(*frm));
+    dst->errno = hton4(frm->errno);
     htonstat(&dst->st, &frm->st);
 }
 
@@ -306,6 +322,7 @@ void ntohFileAttr(FileAttr* dst, FileAttr* frm){
         return;
     }
     memcpy(dst, frm, sizeof(*frm));
+    dst->errno = ntoh4(frm->errno);
     ntohstat(&dst->st, &frm->st);
 }
 
@@ -318,7 +335,7 @@ int sendFileAttr(int sockfd, FileAttr* attr){
     }
 
     htonFileAttr(&_attr, attr);
-    rc = send(sockfd, &_attr, sizeof(*attr), 0);
+    rc = send(sockfd, &_attr, sizeof(_attr), 0);
     if(rc < 0){
         printf("send FileAttr fail\n");
         return -1;
@@ -334,11 +351,11 @@ int recvFileAttr(int sockfd, FileAttr* attr){
         return -1;
     }
 
-    htonFileAttr(&_attr, attr);
-    rc = send(sockfd, &_attr, sizeof(*attr), 0);
+    rc = recv(sockfd, &_attr, sizeof(_attr), 0);
     if(rc < 0){
         printf("recv FileAttr fail\n");
         return -1;
     }
+    ntohFileAttr(attr, &_attr);
     return rc;
 }
