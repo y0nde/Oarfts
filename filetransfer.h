@@ -18,7 +18,6 @@ void htonReadRequest(ReadRequest* req);
 typedef struct ReadResponse{
     req_t req;
     res_t res;
-    int fd;
     int size;
     char padding[56];
 } ReadResponse;
@@ -69,7 +68,6 @@ void htonWriteRequest(WriteRequest* req);
 typedef struct WriteResponse{
     req_t req;
     res_t res;
-    int fd;
     int size;
     char padding[56];
 } WriteResponse;
@@ -144,6 +142,7 @@ void printReaddirResponse(ReaddirResponse *res);
 void ntohReaddirResponse(ReaddirResponse *res);
 void htonReaddirResponse(ReaddirResponse *res);
 
+/*attr transfer*/
 /*data transfer*/
 int sendFileData(int sockfd, char* buf, int size);
 int recvFileData(int sockfd, char* buf, int size);

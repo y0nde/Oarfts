@@ -41,7 +41,6 @@ void printReadResponse(ReadResponse* res){
     printf("[ReadResponse]\n");
     printf("req_t: %d\n", res->req);
     printf("res_t: %d\n", res->res);
-    printf("fd: %d\n", res->fd);
     printf("size: %d\n", res->size);
 }
 
@@ -50,7 +49,6 @@ void ntohReadResponse(ReadResponse *res){
         return;
     }
     res->req = ntoh4(res->req);
-    res->fd = ntoh4(res->fd);
     res->size = ntoh4(res->size);
 }
 
@@ -59,7 +57,6 @@ void htonReadResponse(ReadResponse *res){
         return;
     }
     res->req = hton4(res->req);
-    res->fd = hton4(res->fd);
     res->size = hton4(res->size);
 }
 
@@ -99,7 +96,6 @@ void printWriteResponse(WriteResponse* res){
     printf("[OpenResponse]\n");
     printf("req_t: %d\n", res->req);
     printf("res_t: %d\n", res->res);
-    printf("fd: %d\n", res->fd);
     printf("size: %d\n", res->size);
 }
 
@@ -108,7 +104,6 @@ void ntohWriteResponse(WriteResponse *res){
         return;
     }
     res->req = ntoh4(res->req);
-    res->fd = ntoh4(res->fd);
     res->size = ntoh4(res->size);
 }
 
@@ -117,7 +112,6 @@ void htonWriteResponse(WriteResponse *res){
         return;
     }
     res->req = hton4(res->req);
-    res->fd = hton4(res->fd);
     res->size = hton4(res->size);
 }
 
@@ -614,7 +608,6 @@ int testServer(){
 
     res.req = req.type;
     res.res = YES;
-    res.fd = 0;
     res.size = 5;
 
     htonReadResponse(&res);
@@ -636,7 +629,6 @@ int testServer(){
 
     wres.req = wreq.type;
     wres.res = YES;
-    wres.fd = 0;
     wres.size = 5;
 
     htonWriteResponse(&wres);

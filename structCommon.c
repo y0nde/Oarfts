@@ -304,7 +304,7 @@ int recvFileChunk(int sockfd, FileChunk* data){
 /*FileAttr*/
 /**********/
 void printFileAttr(FileAttr* attr){
-    printf("[FileAttr]\nerrno:%d\n", attr->errno);
+    printf("[FileAttr]\nerrno:%d\nindex:%d\n", attr->errno, attr->index);
     printstat(&(attr->st));
 }
 
@@ -314,6 +314,7 @@ void htonFileAttr(FileAttr* dst, FileAttr* frm){
     }
     memcpy(dst, frm, sizeof(*frm));
     dst->errno = hton4(frm->errno);
+    dst->index = hton4(frm->index);
     htonstat(&dst->st, &frm->st);
 }
 
@@ -323,6 +324,7 @@ void ntohFileAttr(FileAttr* dst, FileAttr* frm){
     }
     memcpy(dst, frm, sizeof(*frm));
     dst->errno = ntoh4(frm->errno);
+    dst->index = ntoh4(frm->index);
     ntohstat(&dst->st, &frm->st);
 }
 

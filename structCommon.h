@@ -46,6 +46,7 @@ typedef struct FileChunk{
 
 typedef struct FileAttr{
     int errno;
+    int index;
     struct stat st;
 } FileAttr;
 
