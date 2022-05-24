@@ -18,9 +18,12 @@ byteorder:
 connection: 
 	${CC} ${CFLAG} -o connection.o -c connection.c 
 
-filetransfer: byteorder struct connection
-	${CC} ${CFLAG} -o filetransfer filetransfer.c  connection.o  structCommon.o byteorder.o
+filetransfer: byteorder struct connection list
+	${CC} ${CFLAG} -o filetransfer filetransfer.c  connection.o  structCommon.o byteorder.o list.o
 
 misc:
 	echo "hello world.\nThis file is a sample for attempte of struct data transportion" > sample.txt
+
+list:
+	${CC} ${CFLAG} -o list.o -c list.c 
 

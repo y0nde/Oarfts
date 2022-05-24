@@ -1,10 +1,11 @@
 #pragma once
 #include "structCommon.h"
+#include "list.h"
 
 /*Request*/
 typedef struct ReadRequest {
     req_t type;
-    char path[PATH_MAX];
+    char path[PATH_MAZ];
     int fd;
     int offset;
     int size;
@@ -30,7 +31,7 @@ void htonReadResponse(ReadResponse *res);
 /*Request*/
 typedef struct OpenRequest {
     req_t type;
-    char path[PATH_MAX];
+    char path[PATH_MAZ];
     int mode;
     char padding[60];
 } OpenRequest;
@@ -54,7 +55,7 @@ void htonOpenResponse(OpenResponse *res);
 /*Request*/
 typedef struct WriteRequest {
     req_t type;
-    char path[PATH_MAX];
+    char path[PATH_MAZ];
     int fd;
     int offset;
     int size;
@@ -80,7 +81,7 @@ void htonWriteResponse(WriteResponse *res);
 /*Request*/
 typedef struct CloseRequest {
     req_t type;
-    char path[PATH_MAX];
+    char path[PATH_MAZ];
     int fd;
     char padding[60];
 } CloseRequest;
@@ -103,7 +104,7 @@ void htonCloseResponse(CloseResponse *res);
 /*Request*/
 typedef struct StatRequest {
     req_t type;
-    char path[PATH_MAX];
+    char path[PATH_MAZ];
     char padding[64];
 } StatRequest;
 void printStatRequest(StatRequest *req);
@@ -125,7 +126,7 @@ void htonStatResponse(StatResponse *res);
 /*Request*/
 typedef struct ReaddirRequest {
     req_t type;
-    char path[PATH_MAX];
+    char path[PATH_MAZ];
     char padding[64];
 } ReaddirRequest;
 void printReaddirRequest(ReaddirRequest *req);
@@ -143,6 +144,8 @@ void ntohReaddirResponse(ReaddirResponse *res);
 void htonReaddirResponse(ReaddirResponse *res);
 
 /*attr transfer*/
+int sendDir(int sockfd, List* attrs);
+int recvDir(int sockfd, List* attrs);
 /*data transfer*/
 int sendFileData(int sockfd, char* buf, int size);
 int recvFileData(int sockfd, char* buf, int size);

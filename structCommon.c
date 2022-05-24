@@ -303,8 +303,10 @@ int recvFileChunk(int sockfd, FileChunk* data){
 /**********/
 /*FileAttr*/
 /**********/
-void printFileAttr(FileAttr* attr){
+void printFileAttr(void* _attr){
+    FileAttr* attr = _attr;
     printf("[FileAttr]\nerrno:%d\nindex:%d\n", attr->errno, attr->index);
+    printf("path: %s\n", attr->path);
     printstat(&(attr->st));
 }
 

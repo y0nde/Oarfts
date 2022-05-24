@@ -4,7 +4,7 @@
 #include <sys/socket.h>
 #include <arpa/inet.h>
 
-#define PATH_MAX 256
+#define PATH_MAZ 256
 #define CHUNK_SIZE 1024
 
 typedef enum req_t {
@@ -28,7 +28,7 @@ typedef enum res_t {
 
 typedef struct Request{
     req_t type;
-    char path[PATH_MAX];
+    char path[PATH_MAZ];
     char data[64];
 } Request;
 
@@ -48,13 +48,14 @@ typedef struct FileAttr{
     int errno;
     int index;
     struct stat st;
+    char path[PATH_MAZ];
 } FileAttr;
 
 void printRequest(Request* req);
 void printResponse(Response* res);
 void printstat(struct stat* st);
 void printFileChunk(FileChunk* data);
-void printFileAttr(FileAttr* attr);
+void printFileAttr(void* attr);
 
 void htonRequest(Request* req);
 void ntohRequest(Request* req);

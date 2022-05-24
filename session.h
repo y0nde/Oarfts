@@ -24,19 +24,19 @@ int handleReaddirRequest(ServerSession* session, ReaddirRequest* req);
 
 //client
 typedef struct ClientSession {
-    char* ip;
+    char ip[20];
     short port;
     int serverfd;
 } ClientSession;
 
 ClientSession* newClientSession(char* ip, short port);
 void freeClientSession(ClientSession* session);
-int openRemoteFile(char* path, int mode);
-int closeRemoteFile(char* path, int fd);
-int readRemoteFile(char* path, int fd, char* buf, int offset, int size);
-int writeRemoteFile(char* path, int fd, char* buf, int offset, int size);
-int statRemoteFile(char* path, struct stat *stbuf);
-int readdirRemoteFile(char* path, int fd, List* stats);
+int openRemoteFile(ClientSession* session, char* path, int mode);
+int closeRemoteFile(ClientSession* session, char* path, int fd);
+int readRemoteFile(ClientSession* session, char* path, int fd, char* buf, int offset, int size);
+int writeRemoteFile(ClientSession* session, char* path, int fd, char* buf, int offset, int size);
+int statRemoteFile(ClientSession* session, char* path, struct stat *stbuf);
+int readdirRemoteFile(ClientSession* session, char* path, int fd, List* stats);
 
 
 

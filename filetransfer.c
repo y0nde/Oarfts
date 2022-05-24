@@ -1,7 +1,10 @@
 #include <stdio.h>
 #include <fcntl.h>
 #include <string.h>
+#include <dirent.h>
+#include <sys/stat.h>
 #include "byteorder.h"
+#include "list.h"
 #include "structCommon.h"
 #include "connection.h"
 #include "filetransfer.h"
@@ -332,6 +335,65 @@ int parsePrintRequest(Request* req){
     return 0;
 }
 
+/*AttrTransfer*/
+int sendDir(int sockfd, List* attrs){
+    int rc;
+    int index = 0;
+    FileAttr attr = {0};
+    FileAttr *pattr;
+    Node* node;
+
+    if(attrs->head == NULL){//からである。
+        attr.errno = 3;
+        attr.index = -1;
+        rc = sendFileAttr(sockfd, &attr); 
+        return -1;
+    }
+    for(node = attrs->head; node != NULL; node = node->next){
+        pattr = node->data;
+        pattr->errno = 0;
+        if(node->next == NULL){
+            pattr->index = -1;
+        }else{
+            pattr->index = index;
+        }
+        rc = sendFileAttr(sockfd, pattr); 
+        if(rc < 0){
+            return -1;
+        }
+        index++;
+    }
+    return 0;
+}
+
+int recvDir(int sockfd, List* attrs){
+    int rc;
+    int index = 0;
+    FileAttr attr = {0};
+
+    //attrsがNULLの場合、対応できない
+    while(1){
+        rc = recvFileAttr(sockfd, &attr);
+        if(rc < 0){
+            return -1;
+        }
+
+        //エラーチェック
+        if(attr.errno > 0){
+            return -1;
+        }
+        push_front(attrs, &attr, sizeof(FileAttr));
+
+        //indexが-1の時に終了
+        if(attr.index == -1){
+            break;
+        }
+    }
+
+    return 0;
+}
+
+/*FileTransfer*/
 int sendFileData(int sockfd, char *buf, int size){
     int rc, chunks; 
     int cnt = 0;
@@ -518,7 +580,7 @@ int testClient(){
     //Stat
     StatRequest sreq = {0};
     StatResponse sres = {0};
-
+    
     sreq.type = STAT;
     strcpy(sreq.path, "file");
 
@@ -556,13 +618,14 @@ int testClient(){
     rc = parsePrintResponse((Response*)&rrres);
 
     //StatTransfer
-    FileAttr fileattr;
+    FileAttr fileattr = {0};
     rc = stat("Makefile", &fileattr.st);
     if(rc < 0){
         return -1;
     }
 
     fileattr.errno = 0;
+    strcpy(fileattr.path, "Makefile");
     rc = sendFileAttr(clientfd, &fileattr);
     if(rc < 0){
         return -1;
@@ -576,6 +639,21 @@ int testClient(){
     file = fopen("./Makefile", "r");
     rc = fread(ftbuf, 1, 5120, file);
     rc = sendFileData(clientfd, ftbuf, rc);
+
+    //DirTransfer
+    DIR* dir;
+    struct dirent* entry;
+    struct stat stbuf;
+    List* attrs;
+
+    attrs = newList();
+
+    rc = recvDir(clientfd, attrs);
+    if(rc < 0){
+        return -1;
+    }
+
+    printList(attrs, printFileAttr);
 
     return 0;
 }
@@ -736,6 +814,42 @@ int testServer(){
 
     rc = recvFileData(clientfd, ftbuf, 5120);
     printf("[FileData]\n%s", ftbuf);
+
+    //DirTransfer
+    DIR* dir;
+    struct dirent* entry;
+    struct stat stbuf;
+    List* attrs;
+
+    attrs = newList();
+
+    dir = opendir(".");
+    if(dir == NULL){
+        return -1;
+    }
+
+    while(1){
+        bzero(&fileattr, sizeof(FileAttr));
+        entry = readdir(dir);
+        if(entry == NULL){
+            break;
+        }
+        strcpy(fileattr.path, entry->d_name);
+        
+        rc = stat(entry->d_name, &fileattr.st);
+        if(rc < 0){
+            return -1;
+        }
+
+        push_front(attrs, &fileattr, sizeof(FileAttr));
+    }
+
+    closedir(dir);
+
+    rc = sendDir(clientfd, attrs);
+    if(rc < 0){
+        return -1;
+    }
 
     return 0;
 }
