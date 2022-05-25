@@ -369,23 +369,24 @@ int sendDir(int sockfd, List* attrs){
 int recvDir(int sockfd, List* attrs){
     int rc;
     int index = 0;
-    FileAttr attr = {0};
+    FileAttr* attr;
 
     //attrsがNULLの場合、対応できない
     while(1){
-        rc = recvFileAttr(sockfd, &attr);
+        attr = malloc(sizeof(FileAttr));
+        rc = recvFileAttr(sockfd, attr);
         if(rc < 0){
             return -1;
         }
 
         //エラーチェック
-        if(attr.errno > 0){
+        if(attr->errno > 0){
             return -1;
         }
-        push_front(attrs, &attr, sizeof(FileAttr));
+        push_front(attrs, attr, sizeof(FileAttr));
 
         //indexが-1の時に終了
-        if(attr.index == -1){
+        if(attr->index == -1){
             break;
         }
     }
@@ -398,6 +399,16 @@ int sendFileData(int sockfd, char *buf, int size){
     int rc, chunks; 
     int cnt = 0;
     FileChunk chunk = {0};
+
+    if(buf == NULL){
+        chunk.index = -2;
+        rc = sendFileChunk(sockfd, &chunk);
+        if(rc < 0){
+            printf("send FileChunk fail\n");
+            return -1;
+        }
+        return 0;
+    }
 
     chunks = (size / CHUNK_SIZE) + 1;
     for(int i = 0; i < chunks; i++){
@@ -433,6 +444,13 @@ int recvFileData(int sockfd, char *buf, int size){
             printf("recv FileChunk fail\n");
             return -1;
         }
+
+        //エラーチェック
+        if(chunk.index == -2){
+            printf("remote operation fail\n");
+            return -1;
+        }
+
         cnt += chunk.size;
         memcpy(buf + (i * CHUNK_SIZE), chunk.data, chunk.size);
         //最後のパケットか確認、であれば終了
@@ -854,7 +872,7 @@ int testServer(){
     return 0;
 }
 
-int main(int argc, char** argv){
+int test_main(int argc, char** argv){
     int rc;
 
     if(argc < 2){

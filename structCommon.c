@@ -55,8 +55,8 @@ int recvRequest(int sockfd, Request* req){
         return -1;
     }
 
-    rc = recv(sockfd, req, sizeof(Request), 0);
-    if(rc < 0){
+    rc = recv(sockfd, req, sizeof(Request), MSG_WAITALL);
+    if(rc < 0 | rc != sizeof(Request)){
         printf("recvRequest fail\n");
         return -1;
     }
@@ -125,8 +125,8 @@ int recvResponse(int sockfd, Response* res){
         return -1;
     }
 
-    rc = recv(sockfd, res, sizeof(Response), 0);
-    if(rc < 0){
+    rc = recv(sockfd, res, sizeof(Response), MSG_WAITALL);
+    if(rc < 0 | rc != sizeof(Response)){
         printf("send Response fail\n");
         return -1;
     }

@@ -1,7 +1,16 @@
 CC = gcc
 CFLAG = -ggdb
 
-all: struct
+all: clean server client 
+
+clean:
+	rm -f server client *.o
+
+server:
+	${CC} ${CFLAG} -o server server.c list.c byteorder.c connection.c filetransfer.c session.c structCommon.c
+
+client:
+	${CC} ${CFLAG} -o client client.c list.c byteorder.c connection.c filetransfer.c session.c structCommon.c
 
 simple: 
 	${CC} ${CFLAG} -o server simpleFTSserver.c
@@ -19,11 +28,13 @@ connection:
 	${CC} ${CFLAG} -o connection.o -c connection.c 
 
 filetransfer: byteorder struct connection list
-	${CC} ${CFLAG} -o filetransfer filetransfer.c  connection.o  structCommon.o byteorder.o list.o
+	${CC} ${CFLAG} -o filetransfer.o -c filetransfer.c 
+
+session: 
+	${CC} ${CFLAG} -o session.o -c session.c
 
 misc:
 	echo "hello world.\nThis file is a sample for attempte of struct data transportion" > sample.txt
 
 list:
 	${CC} ${CFLAG} -o list.o -c list.c 
-

@@ -4,16 +4,18 @@
 #include <stdio.h>
 #include <fcntl.h>
 #include <sys/stat.h>
+#include <pthread.h>
 #include "list.h"
 #include "filetransfer.h"
 
 //server
 typedef struct ServerSession {
+    pthread_t thread;
     int clientfd;
     List* openfiles;
 } ServerSession;
 
-ServerSession* newServerSession();
+ServerSession* newServerSession(int clientfd);
 void freeServerSession(ServerSession* session);
 int handleOpenRequest(ServerSession* session, OpenRequest* req);
 int handleCloseRequest(ServerSession* session, CloseRequest* req);

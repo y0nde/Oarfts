@@ -95,7 +95,7 @@ int handleReadRequest(ServerSession* session, ReadRequest* req){
     res.res = YES;
    
     //サイズの計算
-    rc = stat(req->path, &stbuf); 
+    rc = fstat(req->fd, &stbuf); 
     if(rc < 0){
         htonReadResponse(&res);
         sendErrorResponse(session->clientfd, (Response*)&res);
@@ -117,10 +117,12 @@ int handleReadRequest(ServerSession* session, ReadRequest* req){
     buf = malloc(size);
     rc =lseek(req->fd, req->offset, SEEK_SET);
     if(rc < 0){
+        rc = sendFileData(session->clientfd, NULL, 0);
         return -1;
     }
     rc = read(req->fd, buf, size);
     if(rc < 0){
+        rc = sendFileData(session->clientfd, NULL, 0);
         return -1;
     }
     
@@ -128,6 +130,7 @@ int handleReadRequest(ServerSession* session, ReadRequest* req){
     if(rc < 0){
         return -1;
     }
+    free(buf);
     return 0;
 }
 
@@ -186,6 +189,8 @@ int handleStatRequest(ServerSession* session, StatRequest* req){
     }
 
     res.res = YES;
+    htonStatResponse(&res);
+
     rc = sendResponse(session->clientfd, (Response*)&res);
     if(rc < 0){
         return -1;
@@ -207,7 +212,7 @@ List* getAttrList(char* path){
     struct dirent* entry;
     struct stat stbuf;
     List* attrs;
-    FileAttr fileattr = {0};
+    FileAttr* fileattr;
 
     attrs = newList();
 
@@ -217,19 +222,21 @@ List* getAttrList(char* path){
     }
 
     while(1){
-        bzero(&fileattr, sizeof(FileAttr));
+        fileattr = malloc(sizeof(FileAttr));
+        bzero(fileattr, sizeof(FileAttr));
+
         entry = readdir(dir);
         if(entry == NULL){
             break;
         }
-        strcpy(fileattr.path, entry->d_name);
+        strcpy(fileattr->path, entry->d_name);
         
-        rc = stat(entry->d_name, &fileattr.st);
+        rc = stat(entry->d_name, &fileattr->st);
         if(rc < 0){
             return NULL;
         }
 
-        push_front(attrs, &fileattr, sizeof(FileAttr));
+        push_front(attrs, fileattr, sizeof(FileAttr));
     }
 
     closedir(dir);
@@ -262,6 +269,8 @@ int handleReaddirRequest(ServerSession* session, ReaddirRequest* req){
     }
 
     res.res = YES;
+    htonReaddirResponse(&res);
+
     rc = sendResponse(session->clientfd, (Response*)&res);
     if(rc < 0){
         return -1;
@@ -274,41 +283,14 @@ int handleReaddirRequest(ServerSession* session, ReaddirRequest* req){
         sendErrorResponse(session->clientfd, (Response*)&res);
         return -1;
     }
+
     rc = sendDir(session->clientfd, attrs);
     if(rc < 0){
         return -1;
     }
+
     //Free Attrs
     freeList(attrs, free);
-    return 0;
-}
-
-int parsePrintResponse(ServerSession *session, Request* req){
-    req_t type;
-
-    type = ntoh4(req->type);
-    switch(type){
-        case OPEN:
-            handleOpenRequest(session, (OpenRequest*)req);
-            break;
-        case CLOSE:
-            handleCloseRequest(session, (CloseRequest*)req);
-            break;
-        case READ:
-            handleReadRequest(session, (ReadRequest*)req);
-            break;
-        case WRITE:
-            handleWriteRequest(session, (WriteRequest*)req);
-            break;
-        case STAT:
-            handleStatRequest(session, (StatRequest*)req);
-            break;
-        case READDIR:
-            handleReaddirRequest(session, (ReaddirRequest*)req);
-            break;
-        default:
-            printf("NONE\n");
-    }
     return 0;
 }
 
