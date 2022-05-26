@@ -12,6 +12,9 @@ server:
 client:
 	${CC} ${CFLAG} -o client client.c list.c byteorder.c connection.c filetransfer.c session.c structCommon.c
 
+clientRepl:
+	${CC} ${CFLAG} -o clientRepl clientRepl.c list.c byteorder.c connection.c filetransfer.c session.c structCommon.c
+
 simple: 
 	${CC} ${CFLAG} -o server simpleFTSserver.c
 	${CC} ${CFLAG} -o client simpleFTSclient.c

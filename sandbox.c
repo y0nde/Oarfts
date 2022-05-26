@@ -40,16 +40,23 @@ int main(){
         if(entry == NULL){
             break;
         }
-        printDirent(entry);
+        //printDirent(entry);
 
         rc = stat(entry->d_name, &stbuf);
         if(rc < 0){
             return -1;
         }
-        printStat(&stbuf);
-        puts("");
+        //printStat(&stbuf);
+        //puts("");
     }
 
     closedir(dir);
+
+    //scanf
+    char a[32] = {0};
+    char b[32] = {0};
+    printf(">> ");
+    scanf("%s%s", a, b);
+    printf("%s\n%s\n", a, b);
     return 0;
 }
