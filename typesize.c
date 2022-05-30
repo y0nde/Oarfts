@@ -4,6 +4,18 @@
 #include <fcntl.h>
 #include "structCommon.h"
 
+struct abc{
+    unsigned v:3;
+    unsigned u:6;
+    unsigned t:7;
+    short s;
+} ABC;
+
+union def {
+    struct abc a;
+    unsigned int b;
+} DEF;
+
 int main(void)
 { 
   __SYSCALL_SLONG_TYPE t;
@@ -15,9 +27,18 @@ int main(void)
   short c;
   FileChunk data;
 
+  DEF.a.v = 1;
+  DEF.a.u = 1;
+  DEF.a.t = 1;
+  DEF.a.s = 0;
+
+  printf("DEF.b %x\n", DEF.b);
+
   printf("O_RDWR %d\n", O_RDWR);
   printf("O_RDONLY %d\n", O_RDONLY);
- 
+
+  printf("ABC %ld\n", sizeof(ABC));
+  printf("unsigned %ld\n", sizeof(unsigned));
   printf("FileData %ld\n", sizeof(FileChunk));
   printf("int %ld\n", sizeof(int));
   printf("long %ld\n", sizeof(long));

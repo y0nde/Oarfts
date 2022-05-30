@@ -6,8 +6,7 @@
 #include <string.h>
 #include <netdb.h>
 #include <sys/types.h>
-
-#include "structCommon.h"
+#include "connection.h"
 
 /*Server*/
 int getServerSock(short port){
@@ -20,7 +19,7 @@ int getServerSock(short port){
     listenfd = socket(AF_INET, SOCK_STREAM, 0);
     if(listenfd < 0){
         printf("create sock fail\n");
-        return -1;
+        exit(EXIT_FAILURE);
     }
 
     //ソケット設定
@@ -35,16 +34,14 @@ int getServerSock(short port){
     rc = bind(listenfd, (struct sockaddr*)&servaddr, sizeof(servaddr));
     if(rc < 0){
         printf("bind fail\n");
-        close(listenfd);
-        return -1;
+        exit(EXIT_FAILURE);
     }
 
     //接続待ち
     rc = listen(listenfd, 5);
     if(rc < 0){
         printf("listen fail\n");
-        close(listenfd);
-        return -1;
+        exit(EXIT_FAILURE);
     }
     return listenfd;
 }
@@ -57,7 +54,7 @@ int acceptSock(int listenfd){
     clientfd = accept(listenfd, (struct sockaddr*)&cliaddr, (socklen_t*)&tmp);
     if(rc < 0){
         printf("accept fail\n");
-        return -1;
+        exit(EXIT_FAILURE);
     }
     return clientfd;
 }
@@ -72,7 +69,7 @@ int getClientSock(char* ip, short port){
     sockfd = socket(AF_INET, SOCK_STREAM, 0);
     if(sockfd < 0){
         printf("create sock fail\n");
-        return -1;
+        exit(EXIT_FAILURE);
     }
 
     //アドレス生成
@@ -84,7 +81,7 @@ int getClientSock(char* ip, short port){
     rc = connect(sockfd, (struct sockaddr*)&servaddr, sizeof(servaddr));
     if(rc < 0){
         printf("connect fail\n");
-        return -1;
+        exit(EXIT_FAILURE);
     }
 
     return sockfd;
