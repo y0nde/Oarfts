@@ -6,6 +6,10 @@ all: clean server client
 clean:
 	rm -f server client *.o
 
+transfer: transfer.c connection.c byteorder.c
+	rm -f transfer
+	${CC} ${CFLAG} -o transfer byteorder.c connection.c transfer.c
+
 server:
 	${CC} ${CFLAG} -o server server.c list.c byteorder.c connection.c filetransfer.c session.c structCommon.c
 
