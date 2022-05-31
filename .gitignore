@@ -2,5 +2,6 @@ client
 server
 filetransfer
 clientRepl
+transfer
 *.out
 *.o

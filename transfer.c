@@ -1,4 +1,5 @@
 #include "connection.h"
+#include "byteorder.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
@@ -66,46 +67,100 @@ void* recvData(int fd){
     return buf;
 }
 
-int main(int argc, char* argv[]){
+struct PayloadHeader {
+    int type;
+    int size;
+    int slot1;
+    int slot2;
+    int slot3;
+    int slot4;
+};
+
+struct Payload {
+    struct PayloadHeader header;
+    char* data;
+};
+
+struct PayloadHeader alignPayloadHeader(struct PayloadHeader header){
+
+    if(isLittleEndien()){
+        header.type = bswap4(header.type);
+        header.size = bswap4(header.size);
+        header.slot1 = bswap4(header.slot1);
+        header.slot2 = bswap4(header.slot2);
+        header.slot3 = bswap4(header.slot3);
+        header.slot4 = bswap4(header.slot4);
+    } 
+    return header;
+}
+
+int sendPayload(int fd, struct Payload payload){
+    int rc;
+
+    if(sendData(fd, &payload.header, sizeof(struct PayloadHeader)) < 0){
+        return -1;
+    }
+
+    if((rc = sendData(fd, payload.data, payload.header.size)) < 0){
+        return -1;
+    }
+    return rc;
+}
+
+struct Payload* recvPayload(int fd){
+    int rc;
+    struct PayloadHeader* header;
+    struct Payload* payload = NULL;
+
+    if((header = recvData(fd)) == NULL){
+        return NULL;
+    }
+
+    if(header->size > 0){
+        payload = calloc(0, sizeof(struct Payload));
+        payload->header = *header;
+        payload->data = recvData(fd);
+        if(payload->data == NULL){
+            free(payload);
+            return NULL;
+        }
+    }
+    return payload;
+}
+
+int test_main(int argc, char* argv[]){
     if(argc < 2){
         exit(EXIT_FAILURE);
     }
 
-    struct Packet{
-        int a;
-        int b;
-        char c[16];
-    } packetA;
-
+    struct Payload req = {0};
 
     if(strcmp(argv[1], "client") == 0){
         int fd;
-        struct Packet *pack;
+        struct Payload *payload;
 
         fd = getClientSock("127.0.0.1", 8080);
 
         //パケットが来ることがわかっている
-        if((pack = recvData(fd)) == NULL){
+        if((payload = recvPayload(fd)) == NULL){
             return -1;
         };
-
-        printf("%d,%d,%s\n", pack->a, pack->b, pack->c);
+        printf("%d,%d,%s\n", payload->header.size, payload->header.type, payload->data);
     }else if(strcmp(argv[1], "server") == 0){
         int lfd, fd, rc;
 
         lfd = getServerSock(8080);
         fd = acceptSock(lfd);
-    
-        packetA.a = 7;
-        packetA.b = 8;
-        bzero(packetA.c, 16);strcpy(packetA.c, "This is server.");
-
-        if(sendData(fd, &packetA, sizeof(struct Packet)) < 0){
+   
+        req.data = "This Payload is sent.";
+        req.header.size = strlen(req.data) + 1;
+        if(sendPayload(fd, req) < 0){
             return -1;
         }
-        printf("%d,%d,%s\n", packetA.a, packetA.b, packetA.c);
     }else{
         printf("invalid args\n");
     }
     return 0;
 }
+
+int main(int argc, char** argv){return test_main(argc, argv);}
