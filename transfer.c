@@ -94,15 +94,28 @@ struct PayloadHeader alignPayloadHeader(struct PayloadHeader header){
     return header;
 }
 
+void freePayload(struct Payload* payload){
+    if(payload != NULL){
+        if(payload->data != NULL){
+            free(payload->data);
+        }
+        free(payload);
+    }
+}
+
 int sendPayload(int fd, struct Payload payload){
     int rc;
 
+    payload.header = alignPayloadHeader(payload.header);
     if(sendData(fd, &payload.header, sizeof(struct PayloadHeader)) < 0){
         return -1;
     }
 
-    if((rc = sendData(fd, payload.data, payload.header.size)) < 0){
-        return -1;
+    //送るサイズが０なら送らない
+    if(payload.header.size > 0){
+        if((rc = sendData(fd, payload.data, payload.header.size)) < 0){
+            return -1;
+        }
     }
     return rc;
 }
@@ -115,7 +128,9 @@ struct Payload* recvPayload(int fd){
     if((header = recvData(fd)) == NULL){
         return NULL;
     }
+    payload->header = alignPayloadHeader(payload->header);
 
+    //受け取るサイズが０以上なら受け取る
     if(header->size > 0){
         payload = calloc(0, sizeof(struct Payload));
         payload->header = *header;
@@ -127,6 +142,7 @@ struct Payload* recvPayload(int fd){
     }
     return payload;
 }
+
 
 int test_main(int argc, char* argv[]){
     if(argc < 2){
