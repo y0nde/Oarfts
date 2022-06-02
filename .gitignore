@@ -4,5 +4,6 @@ filetransfer
 clientRepl
 transfer
 test
+whale.txt
 *.out
 *.o

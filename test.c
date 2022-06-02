@@ -8,8 +8,8 @@
 
 void client(){
     int rc, fd, server;
-    char* path1 = "./sample.txt";
-    char rbuf[CHUNK_SIZE] = {0};
+    char* path1 = "./whale.txt";
+    char rbuf[2000000] = {0};
     char* wbuf = "fileoperation test\n";
 
     //connect
@@ -24,7 +24,7 @@ void client(){
     puts("open clear");
 
     //Read
-    if(requestRead(server, fd, rbuf, 0, CHUNK_SIZE) < 0){
+    if(requestRead(server, fd, rbuf, 0, 2000000) < 0){
         puts("read fail");
         exit(EXIT_FAILURE);
     }
