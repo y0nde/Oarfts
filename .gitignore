@@ -3,5 +3,6 @@ server
 filetransfer
 clientRepl
 transfer
+test
 *.out
 *.o

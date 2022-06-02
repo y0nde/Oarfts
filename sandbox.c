@@ -30,6 +30,10 @@ int main(){
     struct dirent* entry;
     struct stat stbuf;
 
+    if(write(44, "aaa", 0) < 0){
+        puts("write error");
+        return -1;
+    }
     dir = opendir(".");
     if(dir == NULL){
         return -1;

@@ -11,30 +11,28 @@ struct Header {
     int size;
 };
 
-struct Header swapHeader(struct Header _header){
-    struct Header header = {0};
-
-    header.size = ntohl(_header.size);
+struct Header swapHeader(struct Header header){
+    header.size = ntohl(header.size);
     return header;
 }
 
 int sendData(int fd, void* buf, int size){
     int rc;
     int errno;
-    struct Header header;
+    struct Header header = {0};
 
     header.size = size;
 
     //send header
     header = swapHeader(header);
-    if((rc = write(fd, &header, sizeof(struct Header))) < 0){
-        printf("error: %s\n", strerror(errno));
+    if((rc = send(fd, &header, sizeof(struct Header), 0)) < 0){
+        printf("sendData header error: %s\n", strerror(errno));
         return -1;
     };
 
     //send data
-    if((rc = write(fd, buf, size)) < 0){
-        printf("error: %s\n", strerror(errno));
+    if((rc = send(fd, buf, size, 0)) < 0){
+        printf("sendData data error: %s\n", strerror(errno));
         return -1;
     };
     
@@ -48,8 +46,8 @@ void* recvData(int fd){
     void* buf;
 
     //recv header
-    if((rc = read(fd, &header, sizeof(struct Header))) < 0){
-        printf("error: %s\n", strerror(errno));
+    if((rc = recv(fd, &header, sizeof(struct Header), 0)) < 0){
+        printf("recvData header error: %s\n", strerror(errno));
         return NULL;
     };
     header = swapHeader(header);
@@ -58,9 +56,10 @@ void* recvData(int fd){
     if(header.size < 0){
         return NULL;
     }
-    buf = calloc(0, header.size);
-    if((rc = read(fd, buf, header.size)) < 0){
-        printf("error: %s\n", strerror(errno));
+    buf = malloc(header.size);
+    bzero(buf, header.size);
+    if((rc = recv(fd, buf, header.size, 0)) < 0){
+        printf("recvData data error: %s\n", strerror(errno));
         return NULL;
     };
 
@@ -104,16 +103,17 @@ void freePayload(struct Payload* payload){
 }
 
 int sendPayload(int fd, struct Payload payload){
-    int rc;
+    int rc, sendsize;
 
+    sendsize = payload.header.size;
     payload.header = alignPayloadHeader(payload.header);
     if(sendData(fd, &payload.header, sizeof(struct PayloadHeader)) < 0){
         return -1;
     }
 
     //送るサイズが０なら送らない
-    if(payload.header.size > 0){
-        if((rc = sendData(fd, payload.data, payload.header.size)) < 0){
+    if(sendsize > 0){
+        if((rc = sendData(fd, payload.data, sendsize)) < 0){
             return -1;
         }
     }
@@ -128,18 +128,28 @@ struct Payload* recvPayload(int fd){
     if((header = recvData(fd)) == NULL){
         return NULL;
     }
-    payload->header = alignPayloadHeader(payload->header);
 
-    //受け取るサイズが０以上なら受け取る
-    if(header->size > 0){
-        payload = calloc(0, sizeof(struct Payload));
-        payload->header = *header;
-        payload->data = recvData(fd);
-        if(payload->data == NULL){
-            free(payload);
-            return NULL;
-        }
+    *header = alignPayloadHeader(*header);
+
+    if(header->size < 0){
+        return NULL;
     }
+
+    payload = malloc(sizeof(struct Payload));
+    bzero(payload, sizeof(struct Payload));
+    payload->header = *header;
+    free(header);
+
+    if(payload->header.size == 0){
+        return payload;
+    }
+
+    payload->data = recvData(fd);
+    if(payload->data == NULL){
+        free(payload);
+        return NULL;
+    }
+
     return payload;
 }
 
@@ -162,6 +172,11 @@ int test_main(int argc, char* argv[]){
             return -1;
         };
         printf("%d,%d,%s\n", payload->header.size, payload->header.type, payload->data);
+
+        if((payload = recvPayload(fd)) == NULL){
+            return -1;
+        };
+        printf("%d,%d,%s\n", payload->header.size, payload->header.type, payload->data);
     }else if(strcmp(argv[1], "server") == 0){
         int lfd, fd, rc;
 
@@ -173,10 +188,17 @@ int test_main(int argc, char* argv[]){
         if(sendPayload(fd, req) < 0){
             return -1;
         }
+
+        req.data = NULL;
+        req.header.size = 0;
+        req.header = alignPayloadHeader(req.header);
+        if(sendPayload(fd, req) < 0){
+            return -1;
+        }
     }else{
         printf("invalid args\n");
     }
     return 0;
 }
 
-int main(int argc, char** argv){return test_main(argc, argv);}
+//int main(int argc, char** argv){return test_main(argc, argv);}
