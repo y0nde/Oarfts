@@ -107,7 +107,7 @@ int sendPayload(int fd, struct Payload payload){
 
     sendsize = payload.header.size;
     payload.header = alignPayloadHeader(payload.header);
-    if(sendData(fd, &payload.header, sizeof(struct PayloadHeader)) < 0){
+    if((rc = sendData(fd, &payload.header, sizeof(struct PayloadHeader))) < 0){
         return -1;
     }
 

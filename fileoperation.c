@@ -68,16 +68,21 @@ int requestClose(int sockfd, int fd){
 
     payload.header.type = CLOSE;
     payload.header.size = 0;
+    payload.header.slot1 = fd;
   
     //リクエストを送信
-    if((rc = sendPayload(sockfd, payload)) < 0){
+    if(sendPayload(sockfd, payload) < 0){
+        puts("1");
         return -1;
     }
     //レスポンスの受信
     if((ppayload = recvPayload(sockfd)) == NULL){
+        puts("2");
         return -1;
     }
+
     if(ppayload->header.type != YES){
+        puts("3");
         return -1;
     }
     
@@ -86,13 +91,13 @@ int requestClose(int sockfd, int fd){
 }
 
 int responseClose(int sockfd, struct Payload request){
-    int rc, fd;
+    int rc;
     struct Payload response = {0};
 
     puts("responseClose");
 
     rc = close(request.header.slot1);
-    if(fd < 0){
+    if(rc < 0){
         response.header.type = NO;
         response.header.size = 0;
         if(sendPayload(sockfd, response) < 0 ){
@@ -276,6 +281,7 @@ int requestWrite(int sockfd, int fd, char* buf, int offset, int size){
         }
 
         buf += sendsize;
+        size -= sendsize;
         wsize +=  sendsize;
         free(payload.data);
     }

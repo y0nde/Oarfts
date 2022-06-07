@@ -8,7 +8,7 @@
 
 void client(){
     int rc, fd, server;
-    char* path1 = "./whale.txt";
+    char* path1 = "./sample.txt";
     char rbuf[2000000] = {0};
     char* wbuf = "fileoperation test\n";
 
@@ -29,21 +29,21 @@ void client(){
         exit(EXIT_FAILURE);
     }
     puts("read clear");
-    printf("[READ]:\n%s", rbuf);
+    //printf("[READ]:\n%s", rbuf);
 
-//    //Write
-//    if(requestWrite(server, fd, wbuf, 0, strlen(wbuf) + 1) < 0){
-//        puts("write fail");
-//        exit(EXIT_FAILURE);
-//    }
-//    puts("write clear");
-//
-//    //Close
-//    if((requestClose(server, fd)) < 0){
-//        puts("close fail");
-//        exit(EXIT_FAILURE);
-//    }
-//    puts("close clear");
+    //Write
+    if(requestWrite(server, fd, wbuf, 1000, strlen(wbuf) + 1) < 0){
+        puts("write fail");
+        exit(EXIT_FAILURE);
+    }
+    puts("write clear");
+
+    //Close
+    if((requestClose(server, fd)) < 0){
+        puts("close fail");
+        exit(EXIT_FAILURE);
+    }
+    puts("close clear");
 }
 
 void server(){
