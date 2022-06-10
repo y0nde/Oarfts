@@ -1,4 +1,5 @@
 #include "fileoperation.h"
+#include "byteorder.h"
 #include <stdio.h>
 #include <sys/stat.h>
 #include <unistd.h>
@@ -338,3 +339,78 @@ int responseWrite(int fd, struct Payload request){
     return wsize;
 }
 
+void swapStat(struct stat* stbuf){
+    if(stbuf == NULL){
+        return;
+    }
+    stbuf->st_size = bswap4(stbuf->st_size);
+    stbuf->st_mode = bswap4(stbuf->st_mode);
+    stbuf->st_gid = bswap4(stbuf->st_gid);
+    stbuf->st_uid = bswap4(stbuf->st_uid);
+    stbuf->st_blksize = bswap8(stbuf->st_blksize);
+    stbuf->st_blocks = bswap8(stbuf->st_blocks);
+    stbuf->st_ino = bswap8(stbuf->st_ino);
+    stbuf->st_dev = bswap8(stbuf->st_dev);
+    stbuf->st_rdev = bswap8(stbuf->st_rdev);
+    stbuf->st_nlink = bswap8(stbuf->st_nlink);
+    stbuf->st_mtime = bswap8(stbuf->st_mtime);
+    stbuf->st_atime = bswap8(stbuf->st_atime);
+    stbuf->st_ctime = bswap8(stbuf->st_ctime);
+}
+
+int requestStat(int sockfd, char* path, struct stat* stbuf){
+    struct Payload payload = {0};
+    struct Payload* ppayload;
+
+    payload.header.type = STAT;
+    payload.header.size = strlen(path) + 1;
+    payload.data = path;
+  
+    //リクエストを送信
+    if(sendPayload(sockfd, payload) < 0){
+        return -2;
+    }
+    //レスポンスの受信
+    if((ppayload = recvPayload(sockfd)) == NULL){
+        return -2;
+    }
+    if(ppayload->header.type != YES){
+        return -1;
+    }
+    //statを取り出す
+    *stbuf = *(struct stat*)ppayload->data;
+    swapStat(stbuf);
+
+    freePayload(ppayload);
+    return 0;
+}
+
+int responseStat(int sockfd, struct Payload request){
+    int rc;
+    struct Payload response = {0};
+    struct stat stbuf;
+
+    puts("responseStat");
+
+    rc = stat(request.data, &stbuf);
+    if(rc < 0){
+        response.header.type = NO;
+        if(sendPayload(sockfd, response) < 0 ){
+            return -1;
+        }
+        return 0;
+    }
+    
+    //responseの生成
+    response.header.type = YES;
+    response.header.size = sizeof(struct stat);
+    swapStat(&stbuf);
+    response.data = (char*)&stbuf;
+
+    //responseの送信
+    if(sendPayload(sockfd, response) < 0){
+        return -1;
+    }
+
+    return 0;
+}

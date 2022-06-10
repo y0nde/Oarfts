@@ -24,7 +24,7 @@ typedef enum {
     WAIT
 } res_t;
 
-int requestOpen(int fd, char* path, int mode);
+int requestOpen(int sockfd, char* path, int mode);
 
 int responseOpen(int sockfd, struct Payload request);
 
@@ -34,9 +34,18 @@ int responseClose(int sockfd, struct Payload request);
 
 int requestRead(int sockfd, int fd, char* buf, int offset, int size);
 
-int responseRead(int fd, struct Payload request);
+int responseRead(int sockfd, struct Payload request);
 
 int requestWrite(int sockfd, int fd, char* buf, int offset, int size);
 
-int responseWrite(int fd, struct Payload request);
+int responseWrite(int sockfd, struct Payload request);
 
+void swapStat(struct stat* stbuf);
+
+int requestStat(int sockfd, char* path, struct stat* stbuf);
+
+int responseStat(int sockfd, struct Payload request);
+
+int requestReaddir(int sockfd, char* path, List* stats);
+
+int responseReaddir(int sockfd, struct Payload request);

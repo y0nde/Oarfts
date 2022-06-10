@@ -44,6 +44,15 @@ void client(){
         exit(EXIT_FAILURE);
     }
     puts("close clear");
+
+    //Stat
+    struct stat stbuf;
+    if((requestStat(server, path1, &stbuf)) < 0){
+        puts("stat fail");
+        exit(EXIT_FAILURE);
+    }
+    printf("%ld %ld %ld \n", stbuf.st_size, stbuf.st_mtime, stbuf.st_ctime);
+    puts("stat clear");
 }
 
 void server(){
@@ -78,6 +87,9 @@ void server(){
                     break;
                 case WRITE:
                     rc = responseWrite(client, *payload);
+                    break;
+                case STAT:
+                    rc = responseStat(client, *payload);
                     break;
                 default:
                     rc = -1;

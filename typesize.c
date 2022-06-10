@@ -2,7 +2,6 @@
 #include <stdio.h>
 #include <stdint.h>
 #include <fcntl.h>
-#include "structCommon.h"
 
 struct abc{
     unsigned v:3;
@@ -25,7 +24,6 @@ int main(void)
   int a;
   long b;
   short c;
-  FileChunk data;
 
   DEF.a.v = 1;
   DEF.a.u = 1;
@@ -39,7 +37,6 @@ int main(void)
 
   printf("ABC %ld\n", sizeof(ABC));
   printf("unsigned %ld\n", sizeof(unsigned));
-  printf("FileData %ld\n", sizeof(FileChunk));
   printf("int %ld\n", sizeof(int));
   printf("long %ld\n", sizeof(long));
   printf("short %ld\n", sizeof(short));
