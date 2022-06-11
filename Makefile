@@ -15,8 +15,8 @@ transfer-test: transfer.c byteorder connection
 fileoperation: fileoperation.c 
 	${CC} ${CFLAG} -o fileoperation.o -c fileoperation.c
 
-test: test.c fileoperation transfer connection byteorder misc
-	${CC} ${CFLAG} -o test test.c fileoperation.o transfer.o byteorder.o connection.o 
+test: test.c fileoperation transfer connection byteorder misc list
+	${CC} ${CFLAG} -o test test.c fileoperation.o transfer.o byteorder.o connection.o list.o
 
 byteorder:
 	${CC} ${CFLAG} -o byteorder.o -c byteorder.c

@@ -46,6 +46,13 @@ int requestStat(int sockfd, char* path, struct stat* stbuf);
 
 int responseStat(int sockfd, struct Payload request);
 
-int requestReaddir(int sockfd, char* path, List* stats);
+struct dirstat {
+    char path[256];
+    struct stat st;
+};
+
+void printdirstat(void* dstat);
+
+List* requestReaddir(int sockfd, char* path);
 
 int responseReaddir(int sockfd, struct Payload request);

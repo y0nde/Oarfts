@@ -1,5 +1,6 @@
 #include "connection.h"
 #include "fileoperation.h"
+#include "list.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
@@ -53,6 +54,17 @@ void client(){
     }
     printf("%ld %ld %ld \n", stbuf.st_size, stbuf.st_mtime, stbuf.st_ctime);
     puts("stat clear");
+
+    //readdir
+    List* stats;
+    struct dirstat dstat;
+    char* path2 = ".";
+    if((stats = requestReaddir(server, path2)) < 0){
+        puts("readdir fail");
+        exit(EXIT_FAILURE);
+    }
+    printList(stats, printdirstat);
+    puts("readdir clear");
 }
 
 void server(){
@@ -90,6 +102,9 @@ void server(){
                     break;
                 case STAT:
                     rc = responseStat(client, *payload);
+                    break;
+                case READDIR:
+                    rc = responseReaddir(client, *payload);
                     break;
                 default:
                     rc = -1;

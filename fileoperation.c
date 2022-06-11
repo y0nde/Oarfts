@@ -1,7 +1,10 @@
 #include "fileoperation.h"
 #include "byteorder.h"
+#include "list.h"
 #include <stdio.h>
 #include <sys/stat.h>
+#include <sys/types.h>
+#include <dirent.h>
 #include <unistd.h>
 #include <fcntl.h>
 
@@ -343,19 +346,21 @@ void swapStat(struct stat* stbuf){
     if(stbuf == NULL){
         return;
     }
-    stbuf->st_size = bswap4(stbuf->st_size);
-    stbuf->st_mode = bswap4(stbuf->st_mode);
-    stbuf->st_gid = bswap4(stbuf->st_gid);
-    stbuf->st_uid = bswap4(stbuf->st_uid);
-    stbuf->st_blksize = bswap8(stbuf->st_blksize);
-    stbuf->st_blocks = bswap8(stbuf->st_blocks);
-    stbuf->st_ino = bswap8(stbuf->st_ino);
-    stbuf->st_dev = bswap8(stbuf->st_dev);
-    stbuf->st_rdev = bswap8(stbuf->st_rdev);
-    stbuf->st_nlink = bswap8(stbuf->st_nlink);
-    stbuf->st_mtime = bswap8(stbuf->st_mtime);
-    stbuf->st_atime = bswap8(stbuf->st_atime);
-    stbuf->st_ctime = bswap8(stbuf->st_ctime);
+    if(isLittleEndien()){
+        stbuf->st_size = bswap4(stbuf->st_size);
+        stbuf->st_mode = bswap4(stbuf->st_mode);
+        stbuf->st_gid = bswap4(stbuf->st_gid);
+        stbuf->st_uid = bswap4(stbuf->st_uid);
+        stbuf->st_blksize = bswap8(stbuf->st_blksize);
+        stbuf->st_blocks = bswap8(stbuf->st_blocks);
+        stbuf->st_ino = bswap8(stbuf->st_ino);
+        stbuf->st_dev = bswap8(stbuf->st_dev);
+        stbuf->st_rdev = bswap8(stbuf->st_rdev);
+        stbuf->st_nlink = bswap8(stbuf->st_nlink);
+        stbuf->st_mtime = bswap8(stbuf->st_mtime);
+        stbuf->st_atime = bswap8(stbuf->st_atime);
+        stbuf->st_ctime = bswap8(stbuf->st_ctime);
+    }
 }
 
 int requestStat(int sockfd, char* path, struct stat* stbuf){
@@ -411,6 +416,111 @@ int responseStat(int sockfd, struct Payload request){
     if(sendPayload(sockfd, response) < 0){
         return -1;
     }
+
+    return 0;
+}
+
+void printdirstat(void* _dstat){
+    if(_dstat == NULL){
+        return;
+    }
+    struct dirstat* dstat = _dstat;
+    printf("%s %ld %ld %ld \n", dstat->path, dstat->st.st_size, dstat->st.st_mtime, dstat->st.st_ctime);
+}
+
+List* requestReaddir(int sockfd, char* path){
+    int rc;
+    List* stats;
+    struct dirstat* attr;
+    struct Payload payload = {0};
+    struct Payload* ppayload;
+    
+
+    payload.header.type = READDIR;
+    payload.header.size = strlen(path) + 1;
+    payload.data = path;
+  
+    //リクエストを送信
+    if(sendPayload(sockfd, payload) < 0){
+        return NULL;
+    }
+
+    stats = newList();
+
+    while(1){
+        //レスポンスの受信
+        if((ppayload = recvPayload(sockfd)) == NULL){
+            freeList(stats, free);
+            return NULL;
+        }
+
+        if(ppayload->header.type != YES){
+            freeList(stats, free);
+            return NULL;
+        }
+
+        if(ppayload->header.slot1 == -1){
+            break;
+        }
+
+        //statを取り出す
+        attr = malloc(sizeof(struct dirstat));
+        *attr = *(struct dirstat*)ppayload->data;
+        swapStat(&attr->st);
+
+        push_front(stats, attr, sizeof(struct dirstat));
+        freePayload(ppayload);
+    }
+    
+    return stats;
+}
+
+int responseReaddir(int sockfd, struct Payload request){
+    int rc;
+    DIR* dir;
+    struct dirent* entry;
+    struct Payload response = {0};
+    struct dirstat dstat = {0};
+
+    puts("responseReaddir");
+
+    dir = opendir(request.data);
+    if(dir == NULL){
+        response.header.type = NO;
+        if(sendPayload(sockfd, response) < 0 ){
+            return -1;
+        }
+        return 0;
+    }
+   
+    while((entry = readdir(dir)) != NULL){
+        //responseの生成
+        response.header.type = YES;
+        response.header.size = sizeof(struct dirstat);
+        response.header.slot1 = 0;
+
+        bzero(&dstat, sizeof(struct dirstat));
+        strcpy(dstat.path, entry->d_name);
+        stat(entry->d_name, &dstat.st);
+        swapStat(&dstat.st);
+
+        response.data = (char*)&dstat;
+        //responseの送信
+        if(sendPayload(sockfd, response) < 0){
+            return -1;
+        }
+    }
+    //responseの生成
+    response.header.type = YES;
+    response.header.size = 0;
+    response.header.slot1 = -1;
+
+    //responseの送信
+    if(sendPayload(sockfd, response) < 0){
+        return -1;
+    }
+
+    closedir(dir);
 
     return 0;
 }
