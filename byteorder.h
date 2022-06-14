@@ -1,11 +1,10 @@
-int isLittleEndien();
+#pragma once
 
+int isLittleEndien();
 int isBigEndien();
 
 short bswap2(short i);
-
 int bswap4(int i);
-
 long bswap8(long i);
 
 short ntoh2(short s);

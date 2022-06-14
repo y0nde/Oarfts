@@ -8,10 +8,8 @@
 #include <unistd.h>
 #include <fcntl.h>
 
-#define PATH_MAZ 256
-#define CHUNK_SIZE 4048
 
-int requestOpen(int fd, char* path, int mode){
+int requestOpen(int fd, const char* path, int mode){
     int fi, rc;
     struct Payload payload = {0};
     struct Payload* ppayload;
@@ -19,12 +17,15 @@ int requestOpen(int fd, char* path, int mode){
     payload.header.type = OPEN;
     payload.header.size = strlen(path) + 1;
     payload.header.slot1 = mode;
-    payload.data = path;
+    payload.data = strdup(path);
   
     //リクエストを送信
     if((rc = sendPayload(fd, payload)) < 0){
+        free(payload.data);
         return -2;
     }
+    free(payload.data);
+
     //レスポンスの受信
     if((ppayload = recvPayload(fd)) == NULL){
         return -2;
@@ -163,10 +164,10 @@ int requestRead(int sockfd, int fd, char* buf, int offset, int size){
 }
 
 int responseRead(int fd, struct Payload request){
-    int rc, filesize, size, sendsize, sizesum = 0, flag = 0;
+    int rc, filesize, size, readsize, sizesum = 0, flag = 0;
     struct stat stbuf;
     struct Payload response = {0};
-    char buf[CHUNK_SIZE] = {0};
+    char buf[DGRAM_SIZE] = {0};
 
     puts("responseRead");
 
@@ -195,18 +196,18 @@ int responseRead(int fd, struct Payload request){
 
     while(1){
         //送るサイズの計算
-        if(size > CHUNK_SIZE){
-            sendsize = CHUNK_SIZE;
+        if(size > DGRAM_SIZE){
+            readsize = DGRAM_SIZE;
         }else if(size > 0){
-            sendsize = size;
+            readsize = size;
             flag = -1;
         }else{
             //送るサイズが０
             break;
         }
 
-        bzero(buf, CHUNK_SIZE);
-        if((rc = read(request.header.slot1, buf, sendsize)) < 0){
+        bzero(buf, DGRAM_SIZE);
+        if((rc = read(request.header.slot1, buf, readsize)) < 0){
             response.header.type = NO;
             if(sendPayload(fd, response) < 0){
                 return -1;
@@ -217,7 +218,7 @@ int responseRead(int fd, struct Payload request){
         //payloadの作成
         response.data = buf;
         response.header.type = YES;
-        response.header.size = sendsize;
+        response.header.size = rc;
         response.header.slot1 = flag;
 
         //payloadの送信
@@ -262,8 +263,8 @@ int requestWrite(int sockfd, int fd, char* buf, int offset, int size){
     //レスポンスの受信とファイルデータの転送
     while(1){
         //送るサイズの計算
-        if(size > CHUNK_SIZE){
-            sendsize = CHUNK_SIZE;
+        if(size > DGRAM_SIZE){
+            sendsize = DGRAM_SIZE;
         }else if(size > 0){
             sendsize = size;
             flag = -1;
@@ -363,18 +364,21 @@ void swapStat(struct stat* stbuf){
     }
 }
 
-int requestStat(int sockfd, char* path, struct stat* stbuf){
+int requestStat(int sockfd, const char* path, struct stat* stbuf){
     struct Payload payload = {0};
     struct Payload* ppayload;
 
     payload.header.type = STAT;
     payload.header.size = strlen(path) + 1;
-    payload.data = path;
+    payload.data = strdup(path);
   
     //リクエストを送信
     if(sendPayload(sockfd, payload) < 0){
+        free(payload.data);
         return -2;
     }
+    free(payload.data);
+
     //レスポンスの受信
     if((ppayload = recvPayload(sockfd)) == NULL){
         return -2;
@@ -424,26 +428,29 @@ void printdirstat(void* _dstat){
     if(_dstat == NULL){
         return;
     }
-    struct dirstat* dstat = _dstat;
+    struct Attribute* dstat = _dstat;
     printf("%s %ld %ld %ld \n", dstat->path, dstat->st.st_size, dstat->st.st_mtime, dstat->st.st_ctime);
 }
 
-List* requestReaddir(int sockfd, char* path){
+List* requestReaddir(int sockfd, const char* path){
     int rc;
     List* stats;
-    struct dirstat* attr;
+    struct Attribute* attr;
     struct Payload payload = {0};
     struct Payload* ppayload;
     
 
     payload.header.type = READDIR;
     payload.header.size = strlen(path) + 1;
-    payload.data = path;
+    payload.data = strdup(path);
   
     //リクエストを送信
     if(sendPayload(sockfd, payload) < 0){
+        free(payload.data);
         return NULL;
     }
+
+    free(payload.data);
 
     stats = newList();
 
@@ -464,11 +471,11 @@ List* requestReaddir(int sockfd, char* path){
         }
 
         //statを取り出す
-        attr = malloc(sizeof(struct dirstat));
-        *attr = *(struct dirstat*)ppayload->data;
+        attr = malloc(sizeof(struct Attribute));
+        *attr = *(struct Attribute*)ppayload->data;
         swapStat(&attr->st);
 
-        push_front(stats, attr, sizeof(struct dirstat));
+        push_front(stats, attr, sizeof(struct Attribute));
         freePayload(ppayload);
     }
     
@@ -480,7 +487,7 @@ int responseReaddir(int sockfd, struct Payload request){
     DIR* dir;
     struct dirent* entry;
     struct Payload response = {0};
-    struct dirstat dstat = {0};
+    struct Attribute dstat = {0};
 
     puts("responseReaddir");
 
@@ -496,10 +503,10 @@ int responseReaddir(int sockfd, struct Payload request){
     while((entry = readdir(dir)) != NULL){
         //responseの生成
         response.header.type = YES;
-        response.header.size = sizeof(struct dirstat);
+        response.header.size = sizeof(struct Attribute);
         response.header.slot1 = 0;
 
-        bzero(&dstat, sizeof(struct dirstat));
+        bzero(&dstat, sizeof(struct Attribute));
         strcpy(dstat.path, entry->d_name);
         stat(entry->d_name, &dstat.st);
         swapStat(&dstat.st);
@@ -523,4 +530,45 @@ int responseReaddir(int sockfd, struct Payload request){
     closedir(dir);
 
     return 0;
+}
+
+int resquestHealth(int sockfd){
+    int fi, rc;
+    struct Payload payload = {0};
+    struct Payload* ppayload;
+
+    payload.header.type = HEALTH;
+    payload.header.size = 0;
+  
+    //リクエストを送信
+    if((rc = sendPayload(sockfd, payload)) < 0){
+        return -1;
+    }
+    //レスポンスの受信
+    if((ppayload = recvPayload(sockfd)) == NULL){
+        return -1;
+    }
+    if(ppayload->header.type != YES){
+        return -1;
+    }
+    freePayload(ppayload);
+    return 0;
+}
+
+int responseHealth(int sockfd, struct Payload request){
+    struct Payload response = {0};
+
+    puts("responseOpen");
+
+    //responseの生成
+    response.header.type = YES;
+    response.header.size = 0;
+
+    //responseの送信
+    if(sendPayload(sockfd, response) < 0){
+        return -1;
+    }
+
+    return 0;
+
 }

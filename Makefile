@@ -1,34 +1,35 @@
 CC = gcc
-CFLAG = -ggdb
+CFLAG = -ggdb 
+OBJD = ./
 
-all: clean server client 
+all: server test
 
 clean:
 	rm -f server client *.o
 
 transfer: transfer.c 
-	${CC} ${CFLAG} -o transfer.o -c transfer.c
-
-transfer-test: transfer.c byteorder connection
-	${CC} ${CFLAG} -o transfer transfer.c byteorder.o connection.o
+	${CC} ${CFLAG} -o ${OBJD}transfer.o -c transfer.c
 
 fileoperation: fileoperation.c 
-	${CC} ${CFLAG} -o fileoperation.o -c fileoperation.c
+	${CC} ${CFLAG} -o ${OBJD}fileoperation.o -c fileoperation.c
 
-test: test.c fileoperation transfer connection byteorder misc list
-	${CC} ${CFLAG} -o test test.c fileoperation.o transfer.o byteorder.o connection.o list.o
+test: test.c fileoperation transfer connection byteorder misc list entry
+	${CC} ${CFLAG} -o test ${OBJD}test.c ${OBJD}fileoperation.o ${OBJD}transfer.o ${OBJD}byteorder.o ${OBJD}connection.o ${OBJD}list.o ${OBJD}entry.o
+
+server: server.c fileoperation transfer connection byteorder misc list entry
+	${CC} ${CFLAG} -o server server.c ${OBJD}fileoperation.o ${OBJD}transfer.o ${OBJD}byteorder.o ${OBJD}connection.o ${OBJD}list.o ${OBJD}entry.o
 
 byteorder:
-	${CC} ${CFLAG} -o byteorder.o -c byteorder.c
+	${CC} ${CFLAG} -o ${OBJD}byteorder.o -c byteorder.c
 
 connection: 
-	${CC} ${CFLAG} -o connection.o -c connection.c 
+	${CC} ${CFLAG} -o ${OBJD}connection.o -c connection.c 
 
-filetransfer: byteorder struct connection list
-	${CC} ${CFLAG} -o filetransfer.o -c filetransfer.c 
+entry: 
+	${CC} ${CFLAG} -o ${OBJD}entry.o -c entry.c 
 
 misc:
 	echo "hello world.\nThis file is a sample for attempte of struct data transportion" > sample.txt
 
 list:
-	${CC} ${CFLAG} -o list.o -c list.c 
+	${CC} ${CFLAG} -o ${OBJD}list.o -c list.c 

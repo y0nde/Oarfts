@@ -1,9 +1,12 @@
+#pragma once
+
+#include "entry.h"
 #include "transfer.h"
 #include "list.h"
 #include <sys/stat.h>
 
 #define PATH_MAZ 256
-#define CHUNK_SIZE 4048
+#define DGRAM_SIZE 4048
 
 typedef enum {
     NONE,
@@ -13,6 +16,7 @@ typedef enum {
     WRITE,
     STAT,
     READDIR,
+    HEALTH
 } req_t;
 
 typedef enum {
@@ -24,7 +28,7 @@ typedef enum {
     WAIT
 } res_t;
 
-int requestOpen(int sockfd, char* path, int mode);
+int requestOpen(int sockfd, const char* path, int mode);
 
 int responseOpen(int sockfd, struct Payload request);
 
@@ -42,17 +46,16 @@ int responseWrite(int sockfd, struct Payload request);
 
 void swapStat(struct stat* stbuf);
 
-int requestStat(int sockfd, char* path, struct stat* stbuf);
+int requestStat(int sockfd, const char* path, struct stat* stbuf);
 
 int responseStat(int sockfd, struct Payload request);
 
-struct dirstat {
-    char path[256];
-    struct stat st;
-};
-
 void printdirstat(void* dstat);
 
-List* requestReaddir(int sockfd, char* path);
+List* requestReaddir(int sockfd, const char* path);
 
 int responseReaddir(int sockfd, struct Payload request);
+
+int resquestHealth(int sockfd);
+
+int responseHealth(int sockfd, struct Payload request);

@@ -6,131 +6,111 @@
 #include <unistd.h>
 #include <fcntl.h>
 #include <string.h>
+#include <pthread.h>
 
-void client(){
+static pthread_mutex_t mutex;
+
+void printOnThread(void(*printer)(void*), void* args){
+    pthread_mutex_lock(&mutex);
+    printer(args);
+    pthread_mutex_unlock(&mutex);
+}
+
+void* client(){
     int rc, fd, server;
     char* path1 = "./sample.txt";
-    char rbuf[2000000] = {0};
+    char rbuf[2000] = {0};
     char* wbuf = "fileoperation test\n";
 
     //connect
     server = getClientSock("127.0.0.1", 8080);
+    pthread_mutex_lock(&mutex);
     puts("connect clear");
+    pthread_mutex_unlock(&mutex);
 
     //Open
     if((fd = requestOpen(server, path1, O_RDWR)) < 0){
+        pthread_mutex_lock(&mutex);
         puts("open fail");
-        exit(EXIT_FAILURE);
+        pthread_mutex_unlock(&mutex);
+        return NULL;
     }
+    pthread_mutex_lock(&mutex);
     puts("open clear");
+    pthread_mutex_unlock(&mutex);
 
     //Read
-    if(requestRead(server, fd, rbuf, 0, 2000000) < 0){
+    if(requestRead(server, fd, rbuf, 0, 2000) < 0){
+        pthread_mutex_lock(&mutex);
         puts("read fail");
-        exit(EXIT_FAILURE);
+        return NULL;
     }
+    pthread_mutex_lock(&mutex);
     puts("read clear");
     //printf("[READ]:\n%s", rbuf);
+    pthread_mutex_unlock(&mutex);
 
     //Write
     if(requestWrite(server, fd, wbuf, 1000, strlen(wbuf) + 1) < 0){
+        pthread_mutex_lock(&mutex);
         puts("write fail");
-        exit(EXIT_FAILURE);
+        pthread_mutex_unlock(&mutex);
+        return NULL;
     }
+    pthread_mutex_lock(&mutex);
     puts("write clear");
+    pthread_mutex_unlock(&mutex);
 
     //Close
     if((requestClose(server, fd)) < 0){
+        pthread_mutex_lock(&mutex);
         puts("close fail");
-        exit(EXIT_FAILURE);
+        pthread_mutex_unlock(&mutex);
+        return NULL;
     }
+    pthread_mutex_lock(&mutex);
     puts("close clear");
+    pthread_mutex_unlock(&mutex);
 
     //Stat
     struct stat stbuf;
     if((requestStat(server, path1, &stbuf)) < 0){
+        pthread_mutex_lock(&mutex);
         puts("stat fail");
-        exit(EXIT_FAILURE);
+        pthread_mutex_unlock(&mutex);
+        return NULL;
     }
+    pthread_mutex_lock(&mutex);
     printf("%ld %ld %ld \n", stbuf.st_size, stbuf.st_mtime, stbuf.st_ctime);
+    pthread_mutex_unlock(&mutex);
     puts("stat clear");
 
     //readdir
     List* stats;
-    struct dirstat dstat;
+    struct Attribute dstat;
     char* path2 = ".";
     if((stats = requestReaddir(server, path2)) < 0){
+        pthread_mutex_lock(&mutex);
         puts("readdir fail");
-        exit(EXIT_FAILURE);
+        pthread_mutex_unlock(&mutex);
+        return NULL;
     }
-    printList(stats, printdirstat);
+    pthread_mutex_lock(&mutex);
+    printList(stats, printAttr);
     puts("readdir clear");
-}
-
-void server(){
-    int rc, server, client;
-    struct Payload* payload;
-
-    server = getServerSock(8080);
-    puts("listen start at 8080");
-    while(1){
-        //コネクションの受付
-        client = acceptSock(server);
-        puts("accpet client");
-        while(1){
-            //リクエスト
-            payload = recvPayload(client);
-            if(payload == NULL){
-                break;
-            }
-
-            puts("recv request");
-
-            //リクエスト処理
-            switch(payload->header.type){
-                case OPEN:
-                    rc = responseOpen(client, *payload);
-                    break;
-                case CLOSE:
-                    rc = responseClose(client, *payload);
-                    break;
-                case READ:
-                    rc = responseRead(client, *payload);
-                    break;
-                case WRITE:
-                    rc = responseWrite(client, *payload);
-                    break;
-                case STAT:
-                    rc = responseStat(client, *payload);
-                    break;
-                case READDIR:
-                    rc = responseReaddir(client, *payload);
-                    break;
-                default:
-                    rc = -1;
-                    break;
-            }
-
-            if(rc < 0){
-                break;
-            }
-
-            freePayload(payload);
-        }
-        close(client);
-    }
+    pthread_mutex_unlock(&mutex);
+    return NULL;
 }
 
 int main(int argc, char** argv){
-    if(argc < 2){
-        puts("need args");
-        exit(EXIT_FAILURE);
-    }
-    if(strcmp(argv[1], "client") == 0){
-        client();
-    }else if(strcmp(argv[1], "server") == 0){
-        server();
-    }
+    pthread_t th1, th2;
+
+    pthread_mutex_init(&mutex, NULL);
+    pthread_create(&th1, NULL, client, NULL);
+    pthread_create(&th2, NULL, client, NULL);
+    pthread_join(th1, NULL);
+    pthread_join(th2, NULL);
+    pthread_mutex_destroy(&mutex);
     return 0;
 }
 

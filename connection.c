@@ -56,6 +56,7 @@ int acceptSock(int listenfd){
         printf("accept fail\n");
         exit(EXIT_FAILURE);
     }
+    printf("accept ip %d\naccept port %d\n", cliaddr.sin_addr.s_addr, cliaddr.sin_port);
     return clientfd;
 }
 
@@ -64,6 +65,7 @@ int getClientSock(char* ip, short port){
     int rc;
     int sockfd;
     struct sockaddr_in servaddr;
+    struct sockaddr_in cliaddr;
     
     //ソケット生成
     sockfd = socket(AF_INET, SOCK_STREAM, 0);
@@ -71,6 +73,17 @@ int getClientSock(char* ip, short port){
         printf("create sock fail\n");
         exit(EXIT_FAILURE);
     }
+
+    //ランダムポートにバインド(マルチチャネルに対応するため)
+    //cliaddr.sin_family = AF_INET;
+    //cliaddr.sin_addr.s_addr = htonl(INADDR_ANY);
+    //cliaddr.sin_port = 0;
+    //rc = bind(sockfd , (struct sockaddr*)&cliaddr, sizeof(cliaddr));
+    //rc = 1;
+    //if(rc < 0){
+        //printf("bind fail\n");
+        //exit(EXIT_FAILURE);
+    //}
 
     //アドレス生成
     servaddr.sin_family = AF_INET;
@@ -85,4 +98,5 @@ int getClientSock(char* ip, short port){
     }
 
     return sockfd;
+
 }
