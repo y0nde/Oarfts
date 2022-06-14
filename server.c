@@ -7,12 +7,12 @@
 #include <fcntl.h>
 #include <string.h>
 
+char* req_t_str[] = {"NONE", "OPEN", "CLOSE", "READ", "WRITE", "STAT", "READDIR", "HEALTH"};
 
 void serverwork(int client){
     int rc;
     struct Payload* payload;
 
-    puts("accpet client");
     while(1){
         //リクエスト
         payload = recvPayload(client);
@@ -20,8 +20,7 @@ void serverwork(int client){
             break;
         }
 
-        puts("recv request");
-
+        printf("recv %s from client[%d]\n", req_t_str[payload->header.type], client);
         //リクエスト処理
         switch(payload->header.type){
             case OPEN:
@@ -67,13 +66,17 @@ void startServer(){
 
     while(1){
         client = acceptSock(server);
-        if((rc = fork()) == 0){
-            close(server);
-            serverwork(client);
-            exit(0);
-        }else{
-            close(client);
-        }
+        if(client < 0){ continue; }
+
+        serverwork(client);
+        //if((rc = fork()) == 0){
+        //    close(server);
+        //    serverwork(client);
+        //    close(client);
+        //    exit(0);
+        //}else{
+        //    close(client);
+        //}
     }
 }
 

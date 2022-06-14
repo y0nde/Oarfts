@@ -10,12 +10,6 @@
 
 static pthread_mutex_t mutex;
 
-void printOnThread(void(*printer)(void*), void* args){
-    pthread_mutex_lock(&mutex);
-    printer(args);
-    pthread_mutex_unlock(&mutex);
-}
-
 void* client(){
     int rc, fd, server;
     char* path1 = "./sample.txt";
@@ -24,6 +18,7 @@ void* client(){
 
     //connect
     server = getClientSock("127.0.0.1", 8080);
+    if(server < 0){ return NULL; }
     pthread_mutex_lock(&mutex);
     puts("connect clear");
     pthread_mutex_unlock(&mutex);
@@ -43,11 +38,34 @@ void* client(){
     if(requestRead(server, fd, rbuf, 0, 2000) < 0){
         pthread_mutex_lock(&mutex);
         puts("read fail");
+        pthread_mutex_unlock(&mutex);
         return NULL;
     }
     pthread_mutex_lock(&mutex);
     puts("read clear");
     //printf("[READ]:\n%s", rbuf);
+    pthread_mutex_unlock(&mutex);
+
+    //0 size Read
+    if(requestRead(server, fd, rbuf, 0, 0) < 0){
+        pthread_mutex_lock(&mutex);
+        puts("read fail");
+        pthread_mutex_unlock(&mutex);
+        return NULL;
+    }
+    pthread_mutex_lock(&mutex);
+    puts("0 size read clear");
+    pthread_mutex_unlock(&mutex);
+
+    //over 0 size size Read
+    if(requestRead(server, fd, rbuf, 80, 0) < 0){
+        pthread_mutex_lock(&mutex);
+        puts("read fail");
+        pthread_mutex_unlock(&mutex);
+        return NULL;
+    }
+    pthread_mutex_lock(&mutex);
+    puts("over 0 size read clear");
     pthread_mutex_unlock(&mutex);
 
     //Write
@@ -57,6 +75,7 @@ void* client(){
         pthread_mutex_unlock(&mutex);
         return NULL;
     }
+
     pthread_mutex_lock(&mutex);
     puts("write clear");
     pthread_mutex_unlock(&mutex);
@@ -107,9 +126,9 @@ int main(int argc, char** argv){
 
     pthread_mutex_init(&mutex, NULL);
     pthread_create(&th1, NULL, client, NULL);
-    pthread_create(&th2, NULL, client, NULL);
+    //pthread_create(&th2, NULL, client, NULL);
     pthread_join(th1, NULL);
-    pthread_join(th2, NULL);
+    //pthread_join(th2, NULL);
     pthread_mutex_destroy(&mutex);
     return 0;
 }

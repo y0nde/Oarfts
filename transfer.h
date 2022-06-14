@@ -12,6 +12,8 @@ void* recvData(int fd);
 
 struct PayloadHeader {
     int type;
+    int req;
+    int res;
     int size;
     int slot1;
     int slot2;

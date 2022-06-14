@@ -15,6 +15,7 @@ int requestOpen(int fd, const char* path, int mode){
     struct Payload* ppayload;
 
     payload.header.type = OPEN;
+    payload.header.req = OPEN;
     payload.header.size = strlen(path) + 1;
     payload.header.slot1 = mode;
     payload.data = strdup(path);
@@ -29,6 +30,9 @@ int requestOpen(int fd, const char* path, int mode){
     //レスポンスの受信
     if((ppayload = recvPayload(fd)) == NULL){
         return -2;
+    }
+    if(ppayload->header.req != OPEN){
+        return -1;
     }
     if(ppayload->header.type != YES){
         return -1;
@@ -48,6 +52,8 @@ int responseOpen(int sockfd, struct Payload request){
     fd = open(request.data, request.header.slot1);
     if(fd < 0){
         response.header.type = NO;
+        response.header.req = OPEN;
+        response.header.size = 0;
         if(sendPayload(sockfd, response) < 0 ){
             return -1;
         }
@@ -56,6 +62,7 @@ int responseOpen(int sockfd, struct Payload request){
     
     //responseの生成
     response.header.type = YES;
+    response.header.req = OPEN;
     response.header.slot1 = fd;
 
     //responseの送信
@@ -72,22 +79,24 @@ int requestClose(int sockfd, int fd){
     struct Payload* ppayload;
 
     payload.header.type = CLOSE;
+    payload.header.req = CLOSE;
     payload.header.size = 0;
     payload.header.slot1 = fd;
   
     //リクエストを送信
     if(sendPayload(sockfd, payload) < 0){
-        puts("1");
         return -1;
     }
     //レスポンスの受信
     if((ppayload = recvPayload(sockfd)) == NULL){
-        puts("2");
+        return -1;
+    }
+
+    if(ppayload->header.req != CLOSE){
         return -1;
     }
 
     if(ppayload->header.type != YES){
-        puts("3");
         return -1;
     }
     
@@ -104,6 +113,7 @@ int responseClose(int sockfd, struct Payload request){
     rc = close(request.header.slot1);
     if(rc < 0){
         response.header.type = NO;
+        response.header.req = CLOSE;
         response.header.size = 0;
         if(sendPayload(sockfd, response) < 0 ){
             return -1;
@@ -113,6 +123,8 @@ int responseClose(int sockfd, struct Payload request){
     
     //responseの生成
     response.header.type = YES;
+    response.header.req = CLOSE;
+    response.header.size = 0;
 
     //responseの送信
     if(sendPayload(sockfd, response) < 0){
@@ -142,9 +154,15 @@ int requestRead(int sockfd, int fd, char* buf, int offset, int size){
         if(ppayload == NULL){
             return -1;
         }
-        if(ppayload->header.type != YES){
-            break;
+
+        if(ppayload->header.req != READ){
+            return -1;
         }
+
+        if(ppayload->header.type != YES){
+            return -1;
+        }
+
         if(ppayload->header.size <= 0){
             break;
         }
@@ -173,6 +191,8 @@ int responseRead(int fd, struct Payload request){
 
     if(fstat(request.header.slot1, &stbuf) < 0){
         response.header.type = NO;
+        response.header.req = READ;
+        response.header.size = 0;
         if(sendPayload(fd, response) < 0){
             return -1;
         }
@@ -182,6 +202,8 @@ int responseRead(int fd, struct Payload request){
 
     if(lseek(request.header.slot1, request.header.slot2, SEEK_SET) < 0){
         response.header.type = NO;
+        response.header.req = READ;
+        response.header.size = 0;
         if(sendPayload(fd, response) < 0){
             return -1;
         }
@@ -202,13 +224,22 @@ int responseRead(int fd, struct Payload request){
             readsize = size;
             flag = -1;
         }else{
-            //送るサイズが０
+            //送るサイズが0のときは0を送って終了
+            response.header.type = YES;
+            response.header.req = READ;
+            response.header.size = 0;
+            response.header.slot1 = -1;
+            if(sendPayload(fd, response) < 0){
+                return -1;
+            }
             break;
         }
 
         bzero(buf, DGRAM_SIZE);
         if((rc = read(request.header.slot1, buf, readsize)) < 0){
             response.header.type = NO;
+            response.header.req = READ;
+            response.header.size = 0;
             if(sendPayload(fd, response) < 0){
                 return -1;
             }
@@ -218,6 +249,7 @@ int responseRead(int fd, struct Payload request){
         //payloadの作成
         response.data = buf;
         response.header.type = YES;
+        response.header.req = READ;
         response.header.size = rc;
         response.header.slot1 = flag;
 
@@ -243,6 +275,7 @@ int requestWrite(int sockfd, int fd, char* buf, int offset, int size){
     }
 
     payload.header.type = WRITE;
+    payload.header.req = WRITE;
     payload.header.slot1 = fd;
     payload.header.slot2 = offset;
     payload.header.slot3 = size;
@@ -256,6 +289,11 @@ int requestWrite(int sockfd, int fd, char* buf, int offset, int size){
     if((ppayload = recvPayload(sockfd)) == NULL){
         return -1;
     }
+
+    if(ppayload->header.req != WRITE){
+        return -1;
+    }
+
     if(ppayload->header.type != YES){
         return -1;
     }
@@ -304,6 +342,7 @@ int responseWrite(int fd, struct Payload request){
     rc = write(request.header.slot1, NULL, 0);
     if(rc < 0){
         response.header.type = NO;
+        response.header.req = WRITE;
         response.header.size = 0;
         if((rc = sendPayload(fd, response)) < 0){
             return -1;
@@ -311,7 +350,9 @@ int responseWrite(int fd, struct Payload request){
         return 0;
     }else{
         response.header.type = YES;
+        response.header.req = WRITE;
         response.header.size = 0;
+        response.header.slot1 = 40;
         if((rc = sendPayload(fd, response)) < 0){
             return -1;
         }
@@ -369,6 +410,7 @@ int requestStat(int sockfd, const char* path, struct stat* stbuf){
     struct Payload* ppayload;
 
     payload.header.type = STAT;
+    payload.header.req = STAT;
     payload.header.size = strlen(path) + 1;
     payload.data = strdup(path);
   
@@ -383,6 +425,11 @@ int requestStat(int sockfd, const char* path, struct stat* stbuf){
     if((ppayload = recvPayload(sockfd)) == NULL){
         return -2;
     }
+
+    if(ppayload->header.req != STAT){
+        return -1;
+    }
+
     if(ppayload->header.type != YES){
         return -1;
     }
@@ -404,6 +451,8 @@ int responseStat(int sockfd, struct Payload request){
     rc = stat(request.data, &stbuf);
     if(rc < 0){
         response.header.type = NO;
+        response.header.req = STAT;
+        response.header.size = 0;
         if(sendPayload(sockfd, response) < 0 ){
             return -1;
         }
@@ -412,6 +461,7 @@ int responseStat(int sockfd, struct Payload request){
     
     //responseの生成
     response.header.type = YES;
+    response.header.req = STAT;
     response.header.size = sizeof(struct stat);
     swapStat(&stbuf);
     response.data = (char*)&stbuf;
@@ -441,6 +491,7 @@ List* requestReaddir(int sockfd, const char* path){
     
 
     payload.header.type = READDIR;
+    payload.header.req = READDIR;
     payload.header.size = strlen(path) + 1;
     payload.data = strdup(path);
   
@@ -457,6 +508,11 @@ List* requestReaddir(int sockfd, const char* path){
     while(1){
         //レスポンスの受信
         if((ppayload = recvPayload(sockfd)) == NULL){
+            freeList(stats, free);
+            return NULL;
+        }
+
+        if(ppayload->header.req != READDIR){
             freeList(stats, free);
             return NULL;
         }
@@ -503,6 +559,7 @@ int responseReaddir(int sockfd, struct Payload request){
     while((entry = readdir(dir)) != NULL){
         //responseの生成
         response.header.type = YES;
+        response.header.req = READDIR;
         response.header.size = sizeof(struct Attribute);
         response.header.slot1 = 0;
 
@@ -519,6 +576,7 @@ int responseReaddir(int sockfd, struct Payload request){
     }
     //responseの生成
     response.header.type = YES;
+    response.header.req = READDIR;
     response.header.size = 0;
     response.header.slot1 = -1;
 
@@ -538,6 +596,7 @@ int resquestHealth(int sockfd){
     struct Payload* ppayload;
 
     payload.header.type = HEALTH;
+    payload.header.req = HEALTH;
     payload.header.size = 0;
   
     //リクエストを送信
@@ -562,6 +621,7 @@ int responseHealth(int sockfd, struct Payload request){
 
     //responseの生成
     response.header.type = YES;
+    response.header.req = HEALTH;
     response.header.size = 0;
 
     //responseの送信

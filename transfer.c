@@ -1,4 +1,5 @@
 #include "connection.h"
+#include "transfer.h"
 #include "byteorder.h"
 #include <stdio.h>
 #include <stdlib.h>
@@ -6,10 +7,6 @@
 #include <string.h>
 #include <errno.h>
 #include <arpa/inet.h>
-
-struct Header {
-    int size;
-};
 
 struct Header swapHeader(struct Header header){
     header.size = ntohl(header.size);
@@ -66,24 +63,12 @@ void* recvData(int fd){
     return buf;
 }
 
-struct PayloadHeader {
-    int type;
-    int size;
-    int slot1;
-    int slot2;
-    int slot3;
-    int slot4;
-};
-
-struct Payload {
-    struct PayloadHeader header;
-    char* data;
-};
-
 struct PayloadHeader alignPayloadHeader(struct PayloadHeader header){
 
     if(isLittleEndien()){
         header.type = bswap4(header.type);
+        header.req = bswap4(header.req);
+        header.res = bswap4(header.res);
         header.size = bswap4(header.size);
         header.slot1 = bswap4(header.slot1);
         header.slot2 = bswap4(header.slot2);
