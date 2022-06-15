@@ -1,3 +1,5 @@
+*.a
+*.so
 client
 server
 filetransfer
