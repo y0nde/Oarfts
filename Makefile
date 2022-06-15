@@ -1,8 +1,11 @@
 CC = gcc
 CFLAG = -ggdb 
-OBJD = ./
+OBJD = ./obj/
 
 all: server test
+
+lib: fileoperation transfer connection byteorder misc list entry server
+	ar rcs oarfts.a ${OBJD}fileoperation.o ${OBJD}transfer.o ${OBJD}byteorder.o ${OBJD}connection.o ${OBJD}list.o ${OBJD}entry.o
 
 clean:
 	rm -f server client *.o
