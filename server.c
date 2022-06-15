@@ -20,7 +20,9 @@ void serverwork(int client){
             break;
         }
 
-        printf("recv %s from client[%d]\n", req_t_str[payload->header.type], client);
+        if(payload->header.type < 8 & payload->header.type >= 0){
+            printf("recv %s from client[%d]\n", req_t_str[payload->header.type], client);
+        }
         //リクエスト処理
         switch(payload->header.type){
             case OPEN:
@@ -68,15 +70,15 @@ void startServer(){
         client = acceptSock(server);
         if(client < 0){ continue; }
 
-        serverwork(client);
-        //if((rc = fork()) == 0){
-        //    close(server);
-        //    serverwork(client);
-        //    close(client);
-        //    exit(0);
-        //}else{
-        //    close(client);
-        //}
+        //serverwork(client);
+        if((rc = fork()) == 0){
+            close(server);
+            serverwork(client);
+            close(client);
+            exit(0);
+        }else{
+            close(client);
+        }
     }
 }
 

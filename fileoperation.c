@@ -140,6 +140,7 @@ int requestRead(int sockfd, int fd, char* buf, int offset, int size){
     struct Payload* ppayload;
 
     payload.header.type = READ;
+    payload.header.req = READ;
     payload.header.slot1 = fd;
     payload.header.slot2 = offset;
     payload.header.slot3 = size;
@@ -154,6 +155,8 @@ int requestRead(int sockfd, int fd, char* buf, int offset, int size){
         if(ppayload == NULL){
             return -1;
         }
+
+        //printf("recvPayload data: %s\n", ppayload->data);
 
         if(ppayload->header.req != READ){
             return -1;
@@ -260,6 +263,10 @@ int responseRead(int fd, struct Payload request){
 
         size -= rc; 
         sizesum += rc;
+
+        if(flag < 0){
+            break;
+        }
     }
     return sizesum;
 }
@@ -291,6 +298,7 @@ int requestWrite(int sockfd, int fd, char* buf, int offset, int size){
     }
 
     if(ppayload->header.req != WRITE){
+        puts("invalid req");
         return -1;
     }
 
@@ -327,6 +335,10 @@ int requestWrite(int sockfd, int fd, char* buf, int offset, int size){
         size -= sendsize;
         wsize +=  sendsize;
         free(payload.data);
+
+        if(flag < 0){
+            break;
+        }
     }
     return wsize;
 }

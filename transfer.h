@@ -28,6 +28,8 @@ struct Payload {
 
 struct PayloadHeader alignPayloadHeader(struct PayloadHeader header);
 
+void printPayloadHeader(struct PayloadHeader* header);
+
 void freePayload(struct Payload* payload);
 
 int sendPayload(int fd, struct Payload payload);

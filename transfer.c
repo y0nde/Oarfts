@@ -78,6 +78,11 @@ struct PayloadHeader alignPayloadHeader(struct PayloadHeader header){
     return header;
 }
 
+void printPayloadHeader(struct PayloadHeader* header){
+    printf("PayloadHeader type: %d, req: %d, res: %d, size: %d, slot1: %d, slot2: %d, slot3: %d, slot4: %d\n", header->type, header->req, header->res, header->size,
+            header->slot1, header->slot2, header->slot3, header->slot4);
+}
+
 void freePayload(struct Payload* payload){
     if(payload != NULL){
         if(payload->data != NULL){
@@ -90,7 +95,9 @@ void freePayload(struct Payload* payload){
 int sendPayload(int fd, struct Payload payload){
     int rc, sendsize;
 
+    puts("send payload");
     sendsize = payload.header.size;
+    printPayloadHeader(&payload.header);
     payload.header = alignPayloadHeader(payload.header);
     if((rc = sendData(fd, &payload.header, sizeof(struct PayloadHeader))) < 0){
         return -1;
@@ -110,11 +117,14 @@ struct Payload* recvPayload(int fd){
     struct PayloadHeader* header;
     struct Payload* payload = NULL;
 
+    puts("recv payload");
     if((header = recvData(fd)) == NULL){
         return NULL;
     }
 
     *header = alignPayloadHeader(*header);
+
+    printPayloadHeader(header);
 
     if(header->size < 0){
         return NULL;

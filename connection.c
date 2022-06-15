@@ -52,7 +52,7 @@ int acceptSock(int listenfd){
     //クライアントソケット生成
     tmp = sizeof(cliaddr);
     clientfd = accept(listenfd, (struct sockaddr*)&cliaddr, (socklen_t*)&tmp);
-    if(rc < 0){
+    if(clientfd < 0){
         printf("accept fail\n");
         return -1;
     }
